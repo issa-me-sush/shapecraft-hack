@@ -19,3 +19,51 @@ body {
   background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+.mapboxgl-ctrl-top-right {
+  margin-top: 4rem;
+}
+
+.mapboxgl-ctrl-group {
+  background-color: rgba(0, 0, 0, 0.5) !important;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.mapboxgl-ctrl-group button {
+  color: white !important;
+}
+
+.mapboxgl-ctrl-group button:hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.mapboxgl-user-location-dot {
+  background-color: #3B82F6 !important;
+}
+
+.mapboxgl-user-location-dot::before {
+  background-color: rgba(59, 130, 246, 0.3) !important;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 20px rgba(255, 215, 0, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 215, 0, 0);
+  }
+}
+
+.memory-spot {
+  cursor: pointer;
+  border-radius: 50%;
+  transition: transform 0.2s;
+}
+
+.memory-spot:hover {
+  transform: scale(1.2);
+}

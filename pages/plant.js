@@ -6,7 +6,7 @@ function PlantPage() {
       <h1 className="text-4xl font-bold mb-6">
         Plant Your Seed
       </h1>
-      {/* Add your plant page content here */}
+
     </div>
   );
 }
