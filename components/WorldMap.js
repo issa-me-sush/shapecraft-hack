@@ -12,23 +12,54 @@ export default function WorldMap({ selectedLocation, onLocationSelect, userAddre
   const [selectedSpot, setSelectedSpot] = useState(null);
 
   // Handle marker clicks
-  const handleSpotClick = (isLandmark) => {
+  const handleSpotClick = async (isLandmark) => {
     if (isLandmark) {
-      setSelectedSpot({
-        name: 'Central Park Nexus',
-        description: 'A vast digital garden where nature meets technology',
-        auraReward: 150,
-        action: 'view-landmark',
-        bannerImage: 'https://images.unsplash.com/photo-1576820250567-95c1e96880d6',  // Static Central Park image
-        level: 3,
-        visitors: 1234,
-        zone: {
-          type: 'Nature Zone',
-          icon: '🌳',
-          bonus: 'Environmental Harmony',
-          quests: ['Trail Blazer', 'Wildlife Observer']
-        }
-      });
+      try {
+        console.log("Fetching place details..."); // Debug log
+        const response = await fetch(`/api/places/details?placeId=ChIJ4zGFAZpYwokRGUGph3Mf37k`);
+        const placeData = await response.json();
+        console.log("Place data received:", placeData); // Debug log
+
+        // Make sure we're using the first photo URL if available
+        const bannerImage = placeData.photos?.[0]?.url;
+        console.log("Banner image URL:", bannerImage); // Debug log
+
+        setSelectedSpot({
+          name: placeData.name || 'Central Park Nexus',
+          description: placeData.editorial_summary?.overview || 
+            'A vast digital garden where nature meets technology',
+          auraReward: 150,
+          action: 'view-landmark',
+          bannerImage: bannerImage, // Use the photo URL directly
+          photos: placeData.photos, // Add this to pass all photos
+          level: 3,
+          visitors: placeData.user_ratings_total || 1234,
+          zone: {
+            type: 'Nature Zone',
+            icon: '🌳',
+            bonus: 'Environmental Harmony',
+            quests: ['Trail Blazer', 'Wildlife Observer']
+          }
+        });
+      } catch (error) {
+        console.error('Error fetching place details:', error);
+        // Fallback to static data if API fails
+        setSelectedSpot({
+          name: 'Central Park Nexus',
+          description: 'A vast digital garden where nature meets technology',
+          auraReward: 150,
+          action: 'view-landmark',
+          bannerImage: 'https://images.unsplash.com/photo-1576820250567-95c1e96880d6',
+          level: 3,
+          visitors: 1234,
+          zone: {
+            type: 'Nature Zone',
+            icon: '🌳',
+            bonus: 'Environmental Harmony',
+            quests: ['Trail Blazer', 'Wildlife Observer']
+          }
+        });
+      }
     } else {
       setSelectedSpot({
         name: 'Times Square Beacon',

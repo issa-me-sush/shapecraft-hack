@@ -193,6 +193,7 @@ function EvolutionPanel({ evolution, zone }) {
 }
 
 export default function LandmarkModal({ landmark, onClose }) {
+  console.log("Landmark data received:", landmark); // Debug log
   const [selectedTab, setSelectedTab] = useState(0);
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
 
@@ -204,32 +205,18 @@ export default function LandmarkModal({ landmark, onClose }) {
       <div className="bg-black/90 w-full max-w-4xl mx-4 rounded-2xl overflow-hidden">
         {/* Dynamic Banner Image */}
         <div className="relative h-64">
-          {currentPhoto ? (
-            <>
-              <Image
-                src={currentPhoto}
-                alt={landmark.name}
-                layout="fill"
-                objectFit="cover"
-                priority
-              />
-              {photos.length > 1 && (
-                <div className="absolute bottom-4 right-4 flex gap-2">
-                  <button
-                    onClick={() => setCurrentPhotoIndex((prev) => (prev > 0 ? prev - 1 : photos.length - 1))}
-                    className="p-2 rounded-full bg-black/50 hover:bg-black/70 text-white transition-colors"
-                  >
-                    ←
-                  </button>
-                  <button
-                    onClick={() => setCurrentPhotoIndex((prev) => (prev < photos.length - 1 ? prev + 1 : 0))}
-                    className="p-2 rounded-full bg-black/50 hover:bg-black/70 text-white transition-colors"
-                  >
-                    →
-                  </button>
-                </div>
-              )}
-            </>
+          {landmark.bannerImage ? (
+            <Image
+              src={landmark.bannerImage}
+              alt={landmark.name}
+              layout="fill"
+              objectFit="cover"
+              priority
+              onError={(e) => {
+                console.error('Image load error:', e); // Debug log
+                e.target.src = 'https://images.unsplash.com/photo-1576820250567-95c1e96880d6';
+              }}
+            />
           ) : (
             <div className="w-full h-full bg-gradient-to-r from-purple-900 to-blue-900 flex items-center justify-center">
               <span className="text-4xl">{landmark.zone?.icon || '🌟'}</span>
