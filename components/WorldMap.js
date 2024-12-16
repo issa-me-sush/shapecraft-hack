@@ -5,159 +5,142 @@ import LandmarkModal from './LandmarkModal';
 
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || 'pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4M29iazA2Z2gycXA4N2pmbDZmangifQ.-g_vE53SD2WrJ6tFX7QHmA';
 
-export default function WorldMap({ selectedLocation, onLocationSelect, userAddress }) {
+// Initial notable spots
+const NOTABLE_SPOTS = [
+  {
+    name: 'Central Park',
+    coordinates: [-73.968285, 40.785091],
+    placeId: 'ChIJ4zGFAZpYwokRGUGph3Mf37k',
+    type: 'park'
+  },
+  {
+    name: 'Times Square',
+    coordinates: [-73.9855, 40.7580],
+    placeId: 'ChIJmQJIxlVYwokRLgeuocVOGVw',
+    type: 'attraction'
+  },
+  {
+    name: 'Metropolitan Museum of Art',
+    coordinates: [-73.9632, 40.7794],
+    placeId: 'ChIJb8Jg9pZYwokR-qHGtvSkLzs',
+    type: 'museum'
+  }
+  // Add more notable spots here
+];
+
+export default function WorldMap() {
   const mapContainer = useRef(null);
   const map = useRef(null);
   const [aura, setAura] = useState(0);
   const [selectedSpot, setSelectedSpot] = useState(null);
 
-  // Handle marker clicks
-  const handleSpotClick = async (isLandmark) => {
-    if (isLandmark) {
-      try {
-        console.log("Fetching place details..."); // Debug log
-        const response = await fetch(`/api/places/details?placeId=ChIJ4zGFAZpYwokRGUGph3Mf37k`);
-        const placeData = await response.json();
-        console.log("Place data received:", placeData); // Debug log
-
-        // Make sure we're using the first photo URL if available
-        const bannerImage = placeData.photos?.[0]?.url;
-        console.log("Banner image URL:", bannerImage); // Debug log
-
-        setSelectedSpot({
-          name: placeData.name || 'Central Park Nexus',
-          description: placeData.editorial_summary?.overview || 
-            'A vast digital garden where nature meets technology',
-          auraReward: 150,
-          action: 'view-landmark',
-          bannerImage: bannerImage, // Use the photo URL directly
-          photos: placeData.photos, // Add this to pass all photos
-          level: 3,
-          visitors: placeData.user_ratings_total || 1234,
-          zone: {
-            type: 'Nature Zone',
-            icon: '🌳',
-            bonus: 'Environmental Harmony',
-            quests: ['Trail Blazer', 'Wildlife Observer']
-          }
-        });
-      } catch (error) {
-        console.error('Error fetching place details:', error);
-        // Fallback to static data if API fails
-        setSelectedSpot({
-          name: 'Central Park Nexus',
-          description: 'A vast digital garden where nature meets technology',
-          auraReward: 150,
-          action: 'view-landmark',
-          bannerImage: 'https://images.unsplash.com/photo-1576820250567-95c1e96880d6',
-          level: 3,
-          visitors: 1234,
-          zone: {
-            type: 'Nature Zone',
-            icon: '🌳',
-            bonus: 'Environmental Harmony',
-            quests: ['Trail Blazer', 'Wildlife Observer']
-          }
-        });
-      }
-    } else {
-      setSelectedSpot({
-        name: 'Times Square Beacon',
-        description: 'A nexus of digital energy',
-        auraReward: 100,
-        action: 'interact'
-      });
-    }
-  };
-
-  // Helper function to create marker elements
-  function createMarkerElement(isLandmark) {
-    const wrapper = document.createElement('div');
-    wrapper.className = 'marker-wrapper';
-    wrapper.style.position = 'relative';
-
-    const el = document.createElement('div');
-    Object.assign(el.style, {
-      width: isLandmark ? '40px' : '30px',
-      height: isLandmark ? '40px' : '30px',
-      borderRadius: '50%',
-      background: isLandmark
-        ? 'linear-gradient(45deg, #FF1493, #FFD700)'
-        : 'linear-gradient(45deg, #3B82F6, #2DD4BF)',
-      border: '3px solid rgba(255, 255, 255, 0.8)',
-      cursor: 'pointer',
-      transition: 'all 0.3s ease',
-      boxShadow: '0 0 15px rgba(0, 0, 0, 0.3)',
-      position: 'absolute',
-      left: '50%',
-      top: '50%',
-      marginLeft: isLandmark ? '-20px' : '-15px',
-      marginTop: isLandmark ? '-20px' : '-15px'
-    });
-
-    // Add hover effect
-    el.onmouseenter = () => {
-      el.style.transform = 'scale(1.2)';
-    };
-    el.onmouseleave = () => {
-      el.style.transform = 'scale(1)';
-    };
-
-    // Add click handler
-    el.addEventListener('click', () => {
-      handleSpotClick(isLandmark);
-    });
-
-    wrapper.appendChild(el);
-    return wrapper;
-  }
-
-  // Initialize map
   useEffect(() => {
-    console.log("Initializing map..."); // Debug log
     if (!mapContainer.current) return;
 
-    try {
-      map.current = new mapboxgl.Map({
-        container: mapContainer.current,
-        style: 'mapbox://styles/mapbox/streets-v12', // Changed to streets style for better visibility
-        center: [-73.968285, 40.785091],
-        zoom: 12
+    map.current = new mapboxgl.Map({
+      container: mapContainer.current,
+      style: 'mapbox://styles/mapbox/streets-v12',
+      center: [-73.968285, 40.785091],
+      zoom: 12
+    });
+
+    map.current.on('load', () => {
+      // Add navigation controls
+      map.current.addControl(new mapboxgl.NavigationControl());
+
+      // Add click handler for map labels
+      map.current.on('click', ['poi-label', 'place-label'], async (e) => {
+        if (!e.features?.length) return;
+
+        const feature = e.features[0];
+        const coordinates = feature.geometry.coordinates.slice();
+        const name = feature.properties.name;
+
+        // Prevent the click event from bubbling to other layers
+        e.preventDefault();
+
+        try {
+          // Fly to location
+          map.current.flyTo({
+            center: coordinates,
+            zoom: 15,
+            pitch: 60,
+            bearing: Math.random() * 180 - 90,
+            duration: 1500
+          });
+
+          // Get place details using Google Places API text search
+          const response = await fetch(`/api/places/search?query=${encodeURIComponent(name)}&location=${coordinates.join(',')}`);
+          const placeData = await response.json();
+
+          if (placeData) {
+            setSelectedSpot({
+              name,
+              coordinates,
+              ...placeData,
+              action: 'view-landmark',
+              level: 1,
+              visitors: placeData.user_ratings_total || 0,
+              auraReward: Math.floor((placeData.rating || 3) * 20),
+              zone: determineZone(placeData.types)
+            });
+          }
+        } catch (error) {
+          console.error('Error fetching place details:', error);
+        }
       });
 
-      map.current.on('load', () => {
-        console.log("Map loaded"); // Debug log
-        // Add navigation controls
-        map.current.addControl(new mapboxgl.NavigationControl());
-
-        // Add Central Park marker
-        const centralPark = new mapboxgl.Marker({
-          element: createMarkerElement(true)
-        })
-          .setLngLat([-73.968285, 40.785091])
-          .addTo(map.current);
-
-        // Add Times Square marker
-        const timesSquare = new mapboxgl.Marker({
-          element: createMarkerElement(false)
-        })
-          .setLngLat([-73.9855, 40.7580])
-          .addTo(map.current);
+      // Change cursor to pointer when hovering over place labels
+      map.current.on('mouseenter', ['poi-label', 'place-label'], () => {
+        map.current.getCanvas().style.cursor = 'pointer';
       });
-    } catch (error) {
-      console.error("Map initialization error:", error); // Debug log
-    }
 
-    return () => {
-      if (map.current) {
-        map.current.remove();
-      }
-    };
+      map.current.on('mouseleave', ['poi-label', 'place-label'], () => {
+        map.current.getCanvas().style.cursor = '';
+      });
+    });
+
+    return () => map.current?.remove();
   }, []);
+
+  // Helper function to determine zone type
+  const determineZone = (types = []) => {
+    if (types.includes('park')) {
+      return {
+        type: 'Nature Zone',
+        icon: '🌳',
+        bonus: 'Environmental Harmony',
+        quests: ['Trail Blazer', 'Wildlife Observer']
+      };
+    }
+    if (types.includes('museum') || types.includes('art_gallery')) {
+      return {
+        type: 'Cultural Zone',
+        icon: '🏛️',
+        bonus: 'Cultural Heritage',
+        quests: ['Art Explorer', 'Culture Seeker']
+      };
+    }
+    if (types.includes('restaurant') || types.includes('cafe')) {
+      return {
+        type: 'Social Zone',
+        icon: '🍽️',
+        bonus: 'Social Harmony',
+        quests: ['Food Critic', 'Social Butterfly']
+      };
+    }
+    // ... add more zone types
+
+    return {
+      type: 'Discovery Zone',
+      icon: '🌟',
+      bonus: 'Explorer\'s Luck',
+      quests: ['Pioneer', 'Trailblazer']
+    };
+  };
 
   return (
     <div className="relative w-full h-screen">
-      {/* Map Container - Fixed styles */}
       <div 
         ref={mapContainer} 
         style={{ 
@@ -176,40 +159,12 @@ export default function WorldMap({ selectedLocation, onLocationSelect, userAddre
         <span className="font-mono">✨ {aura} Aura</span>
       </div>
 
-      {/* Rich Landmark Modal */}
+      {/* Landmark Modal */}
       {selectedSpot?.action === 'view-landmark' && (
         <LandmarkModal 
           landmark={selectedSpot}
           onClose={() => setSelectedSpot(null)}
         />
-      )}
-
-      {/* Simple Interaction Modal */}
-      {selectedSpot?.action === 'interact' && (
-        <div className="absolute inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-20">
-          <div className="bg-black/80 border border-fuchsia-500/30 p-6 rounded-2xl max-w-md w-full mx-4">
-            <h3 className="text-2xl font-bold text-fuchsia-400 mb-4">
-              {selectedSpot.name}
-            </h3>
-            <p className="text-gray-300 mb-4">
-              {selectedSpot.description}
-            </p>
-            <div className="flex justify-between items-center">
-              <span className="text-xl font-bold text-fuchsia-400">
-                +{selectedSpot.auraReward} Aura
-              </span>
-              <button 
-                onClick={() => {
-                  setAura(prev => prev + selectedSpot.auraReward);
-                  setSelectedSpot(null);
-                }}
-                className="px-6 py-2 bg-gradient-to-r from-violet-500 to-fuchsia-500 rounded-full hover:scale-105 transition-all duration-200"
-              >
-                Collect
-              </button>
-            </div>
-          </div>
-        </div>
       )}
     </div>
   );
