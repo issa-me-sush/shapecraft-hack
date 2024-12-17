@@ -15,6 +15,13 @@ const formatTimeRemaining = (nextClaimTime) => {
   const now = Date.now();
   const timeLeft = nextClaimTime - now;
   
+  console.log('Time formatting:', {
+    nextClaimTime,
+    now,
+    timeLeft,
+    nextClaimDate: new Date(nextClaimTime).toISOString()
+  });
+  
   if (timeLeft <= 0) return 'Available Now';
 
   const hours = Math.floor(timeLeft / (1000 * 60 * 60));
@@ -300,10 +307,12 @@ export default function LandmarkModal({ landmark, onClose, onAuraClaimed }) {
       }
 
       const data = await response.json();
-      console.log('Claim response:', data); // Debug log
+      console.log('Claim response:', {
+        ...data,
+        nextClaimFormatted: new Date(data.nextClaimTime).toISOString()
+      });
       
       if (data.success) {
-        // Update local state
         setUserStats(prev => ({
           ...prev,
           totalAuraEarned: data.totalAuraEarned,
@@ -315,7 +324,6 @@ export default function LandmarkModal({ landmark, onClose, onAuraClaimed }) {
           nextClaimTime: data.nextClaimTime
         });
 
-        // Notify parent component
         onAuraClaimed(data.auraEarned);
       }
     } catch (error) {
@@ -368,9 +376,9 @@ export default function LandmarkModal({ landmark, onClose, onAuraClaimed }) {
           {[
             { name: 'Overview', icon: '🌟' },
             { name: 'Quests', icon: '⚔️' },
-            { name: 'Treasures', icon: '����' },
+            { name: 'Treasures', icon: '🏰' },
             { name: 'Community', icon: '👥' },
-            { name: 'Events', icon: '����' }
+            { name: 'Events', icon: '🎉' }
           ].map((tab, idx) => (
             <Tab
               key={tab.name}
