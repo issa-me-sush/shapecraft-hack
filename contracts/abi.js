@@ -1,55 +1,10 @@
-export const CONTRACT_ADDRESS = '0xD6302d3bDDb59Da0217B4A04778d3642A379dA0E';
+export const CONTRACT_ADDRESS = '0x47D5EdFC69A5F5Bddf71C625D300355Cb2Ed85c1';
 
 export const ABI = [
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "spender",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "value",
-				"type": "uint256"
-			}
-		],
-		"name": "approve",
-		"outputs": [
-			{
-				"internalType": "bool",
-				"name": "",
-				"type": "bool"
-			}
-		],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
 	{
 		"inputs": [],
 		"stateMutability": "nonpayable",
 		"type": "constructor"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "spender",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "allowance",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "needed",
-				"type": "uint256"
-			}
-		],
-		"name": "ERC20InsufficientAllowance",
-		"type": "error"
 	},
 	{
 		"inputs": [
@@ -67,9 +22,14 @@ export const ABI = [
 				"internalType": "uint256",
 				"name": "needed",
 				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "tokenId",
+				"type": "uint256"
 			}
 		],
-		"name": "ERC20InsufficientBalance",
+		"name": "ERC1155InsufficientBalance",
 		"type": "error"
 	},
 	{
@@ -80,7 +40,34 @@ export const ABI = [
 				"type": "address"
 			}
 		],
-		"name": "ERC20InvalidApprover",
+		"name": "ERC1155InvalidApprover",
+		"type": "error"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "idsLength",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "valuesLength",
+				"type": "uint256"
+			}
+		],
+		"name": "ERC1155InvalidArrayLength",
+		"type": "error"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "operator",
+				"type": "address"
+			}
+		],
+		"name": "ERC1155InvalidOperator",
 		"type": "error"
 	},
 	{
@@ -91,7 +78,7 @@ export const ABI = [
 				"type": "address"
 			}
 		],
-		"name": "ERC20InvalidReceiver",
+		"name": "ERC1155InvalidReceiver",
 		"type": "error"
 	},
 	{
@@ -102,18 +89,23 @@ export const ABI = [
 				"type": "address"
 			}
 		],
-		"name": "ERC20InvalidSender",
+		"name": "ERC1155InvalidSender",
 		"type": "error"
 	},
 	{
 		"inputs": [
 			{
 				"internalType": "address",
-				"name": "spender",
+				"name": "operator",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "owner",
 				"type": "address"
 			}
 		],
-		"name": "ERC20InvalidSpender",
+		"name": "ERC1155MissingApprovalForAll",
 		"type": "error"
 	},
 	{
@@ -144,23 +136,23 @@ export const ABI = [
 			{
 				"indexed": true,
 				"internalType": "address",
-				"name": "owner",
+				"name": "account",
 				"type": "address"
 			},
 			{
 				"indexed": true,
 				"internalType": "address",
-				"name": "spender",
+				"name": "operator",
 				"type": "address"
 			},
 			{
 				"indexed": false,
-				"internalType": "uint256",
-				"name": "value",
-				"type": "uint256"
+				"internalType": "bool",
+				"name": "approved",
+				"type": "bool"
 			}
 		],
-		"name": "Approval",
+		"name": "ApprovalForAll",
 		"type": "event"
 	},
 	{
@@ -245,37 +237,6 @@ export const ABI = [
 		"type": "event"
 	},
 	{
-		"inputs": [
-			{
-				"internalType": "string",
-				"name": "placeId",
-				"type": "string"
-			}
-		],
-		"name": "claimAura",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "user",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "amount",
-				"type": "uint256"
-			}
-		],
-		"name": "completeQuest",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
 		"anonymous": false,
 		"inputs": [
 			{
@@ -320,22 +281,29 @@ export const ABI = [
 		"type": "event"
 	},
 	{
+		"anonymous": false,
 		"inputs": [
 			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "user",
+				"type": "address"
+			},
+			{
+				"indexed": false,
 				"internalType": "string",
 				"name": "placeId",
 				"type": "string"
 			},
 			{
-				"internalType": "string",
-				"name": "imageUri",
-				"type": "string"
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
 			}
 		],
-		"name": "mintLocationNFT",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
+		"name": "LocationStaked",
+		"type": "event"
 	},
 	{
 		"anonymous": false,
@@ -376,57 +344,82 @@ export const ABI = [
 		"type": "event"
 	},
 	{
-		"inputs": [],
-		"name": "renounceOwnership",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
+		"anonymous": false,
 		"inputs": [
 			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "user",
+				"type": "address"
+			},
+			{
+				"indexed": false,
 				"internalType": "string",
 				"name": "placeId",
 				"type": "string"
 			},
 			{
+				"indexed": false,
 				"internalType": "uint256",
 				"name": "amount",
 				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "rewards",
+				"type": "uint256"
 			}
 		],
-		"name": "stake",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
+		"name": "StakeWithdrawn",
+		"type": "event"
 	},
 	{
+		"anonymous": false,
 		"inputs": [
 			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "operator",
+				"type": "address"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "from",
+				"type": "address"
+			},
+			{
+				"indexed": true,
 				"internalType": "address",
 				"name": "to",
 				"type": "address"
 			},
 			{
-				"internalType": "uint256",
-				"name": "value",
-				"type": "uint256"
-			}
-		],
-		"name": "transfer",
-		"outputs": [
+				"indexed": false,
+				"internalType": "uint256[]",
+				"name": "ids",
+				"type": "uint256[]"
+			},
 			{
-				"internalType": "bool",
-				"name": "",
-				"type": "bool"
+				"indexed": false,
+				"internalType": "uint256[]",
+				"name": "values",
+				"type": "uint256[]"
 			}
 		],
-		"stateMutability": "nonpayable",
-		"type": "function"
+		"name": "TransferBatch",
+		"type": "event"
 	},
 	{
 		"anonymous": false,
 		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "operator",
+				"type": "address"
+			},
 			{
 				"indexed": true,
 				"internalType": "address",
@@ -442,66 +435,88 @@ export const ABI = [
 			{
 				"indexed": false,
 				"internalType": "uint256",
-				"name": "value",
+				"name": "id",
 				"type": "uint256"
-			}
-		],
-		"name": "Transfer",
-		"type": "event"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "from",
-				"type": "address"
 			},
 			{
-				"internalType": "address",
-				"name": "to",
-				"type": "address"
-			},
-			{
+				"indexed": false,
 				"internalType": "uint256",
 				"name": "value",
 				"type": "uint256"
 			}
 		],
-		"name": "transferFrom",
+		"name": "TransferSingle",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": false,
+				"internalType": "string",
+				"name": "value",
+				"type": "string"
+			},
+			{
+				"indexed": true,
+				"internalType": "uint256",
+				"name": "id",
+				"type": "uint256"
+			}
+		],
+		"name": "URI",
+		"type": "event"
+	},
+	{
+		"inputs": [],
+		"name": "APR_DENOMINATOR",
 		"outputs": [
 			{
-				"internalType": "bool",
+				"internalType": "uint256",
 				"name": "",
-				"type": "bool"
+				"type": "uint256"
 			}
 		],
-		"stateMutability": "nonpayable",
+		"stateMutability": "view",
 		"type": "function"
 	},
 	{
-		"inputs": [
+		"inputs": [],
+		"name": "AURA_TOKEN_ID",
+		"outputs": [
 			{
-				"internalType": "address",
-				"name": "newOwner",
-				"type": "address"
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
 			}
 		],
-		"name": "transferOwnership",
-		"outputs": [],
-		"stateMutability": "nonpayable",
+		"stateMutability": "view",
 		"type": "function"
 	},
 	{
-		"inputs": [
+		"inputs": [],
+		"name": "DAILY_CLAIM_INTERVAL",
+		"outputs": [
 			{
-				"internalType": "string",
-				"name": "placeId",
-				"type": "string"
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
 			}
 		],
-		"name": "unstake",
-		"outputs": [],
-		"stateMutability": "nonpayable",
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "STAKE_APR",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
 		"type": "function"
 	},
 	{
@@ -527,29 +542,11 @@ export const ABI = [
 		"inputs": [
 			{
 				"internalType": "address",
-				"name": "owner",
-				"type": "address"
-			},
-			{
-				"internalType": "address",
-				"name": "spender",
+				"name": "account",
 				"type": "address"
 			}
 		],
-		"name": "allowance",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "APR_DENOMINATOR",
+		"name": "auraBalance",
 		"outputs": [
 			{
 				"internalType": "uint256",
@@ -566,6 +563,11 @@ export const ABI = [
 				"internalType": "address",
 				"name": "account",
 				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "id",
+				"type": "uint256"
 			}
 		],
 		"name": "balanceOf",
@@ -574,6 +576,30 @@ export const ABI = [
 				"internalType": "uint256",
 				"name": "",
 				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address[]",
+				"name": "accounts",
+				"type": "address[]"
+			},
+			{
+				"internalType": "uint256[]",
+				"name": "ids",
+				"type": "uint256[]"
+			}
+		],
+		"name": "balanceOfBatch",
+		"outputs": [
+			{
+				"internalType": "uint256[]",
+				"name": "",
+				"type": "uint256[]"
 			}
 		],
 		"stateMutability": "view",
@@ -599,12 +625,59 @@ export const ABI = [
 		"type": "function"
 	},
 	{
-		"inputs": [],
-		"name": "DAILY_CLAIM_INTERVAL",
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "placeId",
+				"type": "string"
+			}
+		],
+		"name": "claimAura",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "user",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "completeQuest",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "placeId",
+				"type": "string"
+			}
+		],
+		"name": "getLocationStats",
 		"outputs": [
 			{
 				"internalType": "uint256",
-				"name": "",
+				"name": "totalAura",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "totalStaked",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "visitorCount",
 				"type": "uint256"
 			}
 		],
@@ -612,13 +685,63 @@ export const ABI = [
 		"type": "function"
 	},
 	{
-		"inputs": [],
-		"name": "decimals",
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "user",
+				"type": "address"
+			},
+			{
+				"internalType": "string",
+				"name": "placeId",
+				"type": "string"
+			}
+		],
+		"name": "getUserLocationStats",
 		"outputs": [
 			{
-				"internalType": "uint8",
+				"internalType": "uint256",
+				"name": "auraFarmed",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "stakeAmount",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "lastClaimTime",
+				"type": "uint256"
+			},
+			{
+				"internalType": "bool",
+				"name": "hasVisited",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "account",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "operator",
+				"type": "address"
+			}
+		],
+		"name": "isApprovedForAll",
+		"outputs": [
+			{
+				"internalType": "bool",
 				"name": "",
-				"type": "uint8"
+				"type": "bool"
 			}
 		],
 		"stateMutability": "view",
@@ -688,16 +811,45 @@ export const ABI = [
 		"type": "function"
 	},
 	{
-		"inputs": [],
-		"name": "name",
-		"outputs": [
+		"inputs": [
 			{
 				"internalType": "string",
 				"name": "",
 				"type": "string"
+			},
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "locationVisitors",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
 			}
 		],
 		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "placeId",
+				"type": "string"
+			},
+			{
+				"internalType": "string",
+				"name": "imageUri",
+				"type": "string"
+			}
+		],
+		"name": "mintLocationNFT",
+		"outputs": [],
+		"stateMutability": "nonpayable",
 		"type": "function"
 	},
 	{
@@ -728,25 +880,159 @@ export const ABI = [
 	},
 	{
 		"inputs": [],
-		"name": "STAKE_APR",
-		"outputs": [
+		"name": "renounceOwnership",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "from",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "to",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256[]",
+				"name": "ids",
+				"type": "uint256[]"
+			},
+			{
+				"internalType": "uint256[]",
+				"name": "values",
+				"type": "uint256[]"
+			},
+			{
+				"internalType": "bytes",
+				"name": "data",
+				"type": "bytes"
+			}
+		],
+		"name": "safeBatchTransferFrom",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "from",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "to",
+				"type": "address"
+			},
 			{
 				"internalType": "uint256",
-				"name": "",
+				"name": "id",
 				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "value",
+				"type": "uint256"
+			},
+			{
+				"internalType": "bytes",
+				"name": "data",
+				"type": "bytes"
+			}
+		],
+		"name": "safeTransferFrom",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "operator",
+				"type": "address"
+			},
+			{
+				"internalType": "bool",
+				"name": "approved",
+				"type": "bool"
+			}
+		],
+		"name": "setApprovalForAll",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "newBaseURI",
+				"type": "string"
+			}
+		],
+		"name": "setBaseURI",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "placeId",
+				"type": "string"
+			},
+			{
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "stake",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "bytes4",
+				"name": "interfaceId",
+				"type": "bytes4"
+			}
+		],
+		"name": "supportsInterface",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
 			}
 		],
 		"stateMutability": "view",
 		"type": "function"
 	},
 	{
-		"inputs": [],
-		"name": "symbol",
-		"outputs": [
+		"inputs": [
 			{
 				"internalType": "string",
 				"name": "",
 				"type": "string"
+			}
+		],
+		"name": "totalLocationAura",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
 			}
 		],
 		"stateMutability": "view",
@@ -772,8 +1058,64 @@ export const ABI = [
 		"type": "function"
 	},
 	{
-		"inputs": [],
-		"name": "totalSupply",
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "newOwner",
+				"type": "address"
+			}
+		],
+		"name": "transferOwnership",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "placeId",
+				"type": "string"
+			}
+		],
+		"name": "unstake",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "tokenId",
+				"type": "uint256"
+			}
+		],
+		"name": "uri",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			},
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			}
+		],
+		"name": "userLocationAura",
 		"outputs": [
 			{
 				"internalType": "uint256",

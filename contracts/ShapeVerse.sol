@@ -1,22 +1,35 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
+import "@openzeppelin/contracts/utils/Base64.sol";
 
-contract ShapeVerse is ERC20, Ownable, ReentrancyGuard {
+contract ShapeVerse is ERC1155, Ownable, ReentrancyGuard {
+    using Strings for uint256;
+
+    // Constants
+    uint256 public constant AURA_TOKEN_ID = 0; // ID for fungible AURA tokens
+    uint256 public constant DAILY_CLAIM_INTERVAL = 1 days;
+    uint256 public constant STAKE_APR = 1500; // 15% APR
+    uint256 public constant APR_DENOMINATOR = 10000;
+
     // State variables
     mapping(string => bool) public activeLocations;
     mapping(address => mapping(string => uint256)) public lastClaim;
     mapping(uint256 => LocationNFT) public locationNFTs;
     mapping(address => mapping(string => StakeInfo)) public userStakes;
     mapping(string => uint256) public totalLocationStakes;
+    mapping(string => uint256) public totalLocationAura;
+    mapping(address => mapping(string => uint256)) public userLocationAura;
+    mapping(string => address[]) public locationVisitors;
     
-    uint256 public nftCounter;
-    uint256 public constant DAILY_CLAIM_INTERVAL = 1 days;
-    uint256 public constant STAKE_APR = 1500; // 15% APR
-    uint256 public constant APR_DENOMINATOR = 10000;
+    uint256 public nftCounter = 1; // Start from 1, 0 is reserved for AURA
+
+    // Add base URI for metadata
+    string private _baseURI;
 
     // Structs
     struct LocationNFT {
@@ -39,14 +52,25 @@ contract ShapeVerse is ERC20, Ownable, ReentrancyGuard {
     event AuraUnstaked(address indexed user, string placeId, uint256 amount, uint256 rewards);
     event QuestCompleted(address indexed user, uint256 amount);
     event LocationActivated(string placeId, address activator);
+    event LocationStaked(address indexed user, string placeId, uint256 amount);
+    event StakeWithdrawn(address indexed user, string placeId, uint256 amount, uint256 rewards);
 
-    constructor() ERC20("ShapeVerse Aura", "SAURA") Ownable(msg.sender) {
-        _mint(msg.sender, 1000000 * 10**decimals()); // 1M tokens
+    constructor() ERC1155("") Ownable(msg.sender) {
+        // Mint initial AURA supply
+        _mint(msg.sender, AURA_TOKEN_ID, 1000000 * 1e18, "");
     }
 
-    // Modified claimAura function that auto-activates locations
+    // Add setBaseURI function
+    function setBaseURI(string memory newBaseURI) external onlyOwner {
+        _baseURI = newBaseURI;
+    }
+
+    // Modified to use ERC1155 balanceOf
+    function auraBalance(address account) public view returns (uint256) {
+        return balanceOf(account, AURA_TOKEN_ID);
+    }
+
     function claimAura(string memory placeId) external nonReentrant {
-        // Auto-activate if not active
         if (!activeLocations[placeId]) {
             activeLocations[placeId] = true;
             emit LocationActivated(placeId, msg.sender);
@@ -57,14 +81,27 @@ contract ShapeVerse is ERC20, Ownable, ReentrancyGuard {
             "Too soon to claim"
         );
 
-        uint256 amount = 100 * 10**decimals(); // 100 SAURA per claim
+        uint256 amount = 100 * 1e18;
         lastClaim[msg.sender][placeId] = block.timestamp;
 
-        _mint(msg.sender, amount);
+        totalLocationAura[placeId] += amount;
+        userLocationAura[msg.sender][placeId] += amount;
+
+        bool isNewVisitor = true;
+        for(uint i = 0; i < locationVisitors[placeId].length; i++) {
+            if(locationVisitors[placeId][i] == msg.sender) {
+                isNewVisitor = false;
+                break;
+            }
+        }
+        if(isNewVisitor) {
+            locationVisitors[placeId].push(msg.sender);
+        }
+
+        _mint(msg.sender, AURA_TOKEN_ID, amount, "");
         emit AuraClaimed(msg.sender, placeId, amount);
     }
 
-    // NFT functions
     function mintLocationNFT(string memory placeId, string memory imageUri) external {
         require(activeLocations[placeId], "Location not active");
         
@@ -77,15 +114,63 @@ contract ShapeVerse is ERC20, Ownable, ReentrancyGuard {
             block.timestamp
         );
 
+        _mint(msg.sender, nftCounter, 1, "");
         emit LocationNFTMinted(msg.sender, placeId, nftCounter);
     }
 
-    // Staking functions
+    // Override uri function properly
+    function uri(uint256 tokenId) public view override returns (string memory) {
+        if (tokenId == AURA_TOKEN_ID) {
+            return string(abi.encodePacked(_baseURI, "aura.json"));
+        }
+        
+        LocationNFT memory nft = locationNFTs[tokenId];
+        require(nft.timestamp != 0, "Token does not exist");
+        
+        // Return a proper metadata JSON URI that follows OpenSea metadata standards
+        return string(
+            abi.encodePacked(
+                "data:application/json;base64,",
+                Base64.encode(
+                    bytes(
+                        string(
+                            abi.encodePacked(
+                                '{"name": "ShapeVerse Location #', 
+                                Strings.toString(tokenId),
+                                '", "description": "ShapeVerse Location NFT", "image": "',
+                                nft.imageUri,
+                                '", "attributes": [{"trait_type": "Location", "value": "',
+                                nft.placeId,
+                                '"}]}'
+                            )
+                        )
+                    )
+                )
+            )
+        );
+    }
+
+    // Add isApprovedForAll override to allow contract to transfer tokens
+    function isApprovedForAll(address account, address operator) 
+        public 
+        view 
+        virtual 
+        override 
+        returns (bool) 
+    {
+        // Allow the contract itself to transfer tokens
+        if (operator == address(this)) {
+            return true;
+        }
+        return super.isApprovedForAll(account, operator);
+    }
+
+    // Modify staking functions to use ERC1155
     function stake(string memory placeId, uint256 amount) external nonReentrant {
         require(activeLocations[placeId], "Location not active");
-        require(balanceOf(msg.sender) >= amount, "Insufficient balance");
+        require(balanceOf(msg.sender, AURA_TOKEN_ID) >= amount, "Insufficient balance");
 
-        _transfer(msg.sender, address(this), amount);
+        safeTransferFrom(msg.sender, address(this), AURA_TOKEN_ID, amount, "");
 
         StakeInfo storage userStake = userStakes[msg.sender][placeId];
         if (userStake.amount > 0) {
@@ -98,32 +183,36 @@ contract ShapeVerse is ERC20, Ownable, ReentrancyGuard {
         emit AuraStaked(msg.sender, placeId, amount);
     }
 
+    // Fix unstake function to handle approvals
     function unstake(string memory placeId) external nonReentrant {
         StakeInfo storage userStake = userStakes[msg.sender][placeId];
         require(userStake.amount > 0, "No stake found");
 
         uint256 rewards = _calculateRewards(msg.sender, placeId);
-
         uint256 stakedAmount = userStake.amount;
+
         totalLocationStakes[placeId] -= stakedAmount;
         userStake.amount = 0;
         userStake.timestamp = 0;
 
-        _mint(msg.sender, rewards);
-        _transfer(address(this), msg.sender, stakedAmount);
+        // Mint rewards first
+        _mint(msg.sender, AURA_TOKEN_ID, rewards, "");
+        
+        // Then transfer staked amount back
+        _safeTransferFrom(address(this), msg.sender, AURA_TOKEN_ID, stakedAmount, "");
 
         emit AuraUnstaked(msg.sender, placeId, stakedAmount, rewards);
     }
 
     // Quest completion
     function completeQuest(address user, uint256 amount) external onlyOwner {
-        _mint(user, amount);
+        _mint(user, AURA_TOKEN_ID, amount, "");
         emit QuestCompleted(user, amount);
     }
 
     // Event access check
     function checkEventAccess(uint256 minAura) external view returns (bool) {
-        return balanceOf(msg.sender) >= minAura;
+        return balanceOf(msg.sender, AURA_TOKEN_ID) >= minAura;
     }
 
     // Internal functions
@@ -138,8 +227,43 @@ contract ShapeVerse is ERC20, Ownable, ReentrancyGuard {
     function _claimStakingRewards(address user, string memory placeId) internal {
         uint256 rewards = _calculateRewards(user, placeId);
         if (rewards > 0) {
-            _mint(user, rewards);
+            _mint(user, AURA_TOKEN_ID, rewards, "");
             userStakes[user][placeId].timestamp = block.timestamp;
         }
+    }
+
+    // View functions for UI
+    function getLocationStats(string memory placeId) external view returns (
+        uint256 totalAura,
+        uint256 totalStaked,
+        uint256 visitorCount
+    ) {
+        return (
+            totalLocationAura[placeId],
+            totalLocationStakes[placeId],
+            locationVisitors[placeId].length
+        );
+    }
+
+    function getUserLocationStats(address user, string memory placeId) external view returns (
+        uint256 auraFarmed,
+        uint256 stakeAmount,
+        uint256 lastClaimTime,
+        bool hasVisited
+    ) {
+        bool _hasVisited = false;
+        for(uint i = 0; i < locationVisitors[placeId].length; i++) {
+            if(locationVisitors[placeId][i] == user) {
+                _hasVisited = true;
+                break;
+            }
+        }
+        
+        return (
+            userLocationAura[user][placeId],
+            userStakes[user][placeId].amount,
+            lastClaim[user][placeId],
+            _hasVisited
+        );
     }
 } 
