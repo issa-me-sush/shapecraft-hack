@@ -2,8 +2,29 @@ import { useState, useEffect } from 'react';
 import { Tab } from '@headlessui/react';
 import Image from 'next/image';
 import { EVOLUTION_LEVELS, ZONE_TYPES } from '../utils/placeEvolution';
-import { useUser } from "@account-kit/react";
+import { useUser , useAuthModal } from "@account-kit/react";
 import { XMarkIcon } from '@heroicons/react/24/outline';
+// import { useAuthModal } from '../hooks/useAuthModal';
+
+// Add this helper function at the top of the file, before the component
+const formatTimeRemaining = (nextClaimTime) => {
+  if (!nextClaimTime) {
+    return 'Available Now';
+  }
+
+  const now = Date.now();
+  const timeLeft = nextClaimTime - now;
+  
+  if (timeLeft <= 0) return 'Available Now';
+
+  const hours = Math.floor(timeLeft / (1000 * 60 * 60));
+  const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+
+  if (hours > 0) {
+    return `${hours}h ${minutes}m`;
+  }
+  return `${minutes}m`;
+};
 
 // Add these new components for the Treasures and Community tabs
 const TreasuresPanel = ({ landmark }) => {
@@ -195,7 +216,8 @@ function EvolutionPanel({ evolution, zone }) {
 }
 
 export default function LandmarkModal({ landmark, onClose, onAuraClaimed }) {
-  const { user } = useUser();
+  const user = useUser();
+  const { openAuthModal } = useAuthModal();
   console.log("Landmark data received:", landmark); // Debug log
   const [selectedTab, setSelectedTab] = useState(0);
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
@@ -212,66 +234,90 @@ export default function LandmarkModal({ landmark, onClose, onAuraClaimed }) {
   // Fetch user stats for this location
   useEffect(() => {
     const fetchUserStats = async () => {
-      if (!user?.wallet?.address || !landmark.placeId) return;
+      if (!user?.address || !landmark.place_id) return;
 
       try {
         const response = await fetch(`/api/users/location-stats`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            walletAddress: user.wallet.address,
-            placeId: landmark.placeId
+            walletAddress: user.address,
+            placeId: landmark.place_id
           })
         });
 
         const data = await response.json();
+        console.log('User stats:', data); // Debug log
         setUserStats(data);
         
-        // Check if user can claim
-        const lastClaim = new Date(data?.lastClaim || 0);
-        const hoursSinceLastClaim = (Date.now() - lastClaim) / (1000 * 60 * 60);
-        setClaimStatus({
-          canClaim: hoursSinceLastClaim >= 24,
-          nextClaimTime: lastClaim.getTime() + (24 * 60 * 60 * 1000)
-        });
+        // Simplified claim status logic
+        const lastClaim = data.lastClaim ? new Date(data.lastClaim) : null;
+        const now = new Date();
+        
+        if (!lastClaim) {
+          // Never claimed before
+          setClaimStatus({
+            canClaim: true,
+            nextClaimTime: null
+          });
+        } else {
+          const timeSinceLastClaim = now - lastClaim;
+          const canClaim = timeSinceLastClaim >= 24 * 60 * 60 * 1000;
+          
+          setClaimStatus({
+            canClaim,
+            nextClaimTime: canClaim ? null : lastClaim.getTime() + (24 * 60 * 60 * 1000)
+          });
+        }
       } catch (error) {
         console.error('Error fetching user stats:', error);
       }
     };
 
     fetchUserStats();
-  }, [user, landmark.placeId]);
+  }, [user, landmark.place_id]);
 
   // Handle aura claim
   const handleClaim = async () => {
-    if (!user?.wallet?.address || !landmark.placeId || !claimStatus.canClaim) return;
-
+    if (!user?.address || !landmark.place_id) {
+      console.log("User or landmark data is missing:", { user, landmark });
+      return;
+    }
+    
     setIsLoading(true);
     try {
       const response = await fetch('/api/locations/claim-aura', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          walletAddress: user.wallet.address,
-          placeId: landmark.placeId
+          walletAddress: user.address,
+          placeId: landmark.place_id
         })
       });
 
+      if (!response.ok) {
+        throw new Error('Failed to claim');
+      }
+
       const data = await response.json();
+      console.log('Claim response:', data); // Debug log
       
-      // Update local state
-      setUserStats(prev => ({
-        ...prev,
-        totalAuraEarned: (prev?.totalAuraEarned || 0) + data.auraEarned,
-        lastClaim: new Date()
-      }));
+      if (data.success) {
+        // Update local state
+        setUserStats(prev => ({
+          ...prev,
+          totalAuraEarned: data.totalAuraEarned,
+          lastClaim: new Date()
+        }));
 
-      setClaimStatus({
-        canClaim: false,
-        nextClaimTime: Date.now() + (24 * 60 * 60 * 1000)
-      });
+        setClaimStatus({
+          canClaim: false,
+          nextClaimTime: data.nextClaimTime
+        });
 
-      // You might want to update global aura state here
+        // Notify parent component
+        onAuraClaimed(data.auraEarned);
+      }
     } catch (error) {
       console.error('Error claiming aura:', error);
     } finally {
@@ -322,9 +368,9 @@ export default function LandmarkModal({ landmark, onClose, onAuraClaimed }) {
           {[
             { name: 'Overview', icon: '🌟' },
             { name: 'Quests', icon: '⚔️' },
-            { name: 'Treasures', icon: '💎' },
+            { name: 'Treasures', icon: '����' },
             { name: 'Community', icon: '👥' },
-            { name: 'Events', icon: '🎉' }
+            { name: 'Events', icon: '����' }
           ].map((tab, idx) => (
             <Tab
               key={tab.name}
@@ -362,7 +408,7 @@ export default function LandmarkModal({ landmark, onClose, onAuraClaimed }) {
               </div>
 
               {/* Personal Stats */}
-              {user?.wallet?.address && (
+              {user && (
                 <div className="bg-white/5 rounded-xl p-4">
                   <h3 className="text-lg font-bold text-purple-400 mb-3">Your Activity</h3>
                   <div className="grid grid-cols-2 gap-4">
@@ -383,7 +429,7 @@ export default function LandmarkModal({ landmark, onClose, onAuraClaimed }) {
               )}
 
               {/* Claim Section */}
-              {user?.wallet?.address ? (
+              {user ? (
                 <div className="bg-white/5 rounded-xl p-6">
                   <div className="flex justify-between items-center mb-4">
                     <h3 className="text-xl font-bold text-purple-400">Daily Aura Claim</h3>
@@ -392,7 +438,7 @@ export default function LandmarkModal({ landmark, onClose, onAuraClaimed }) {
                     </div>
                   </div>
                   
-                  {claimStatus.canClaim ? (
+                  {(claimStatus.canClaim || !claimStatus.nextClaimTime) ? (
                     <button
                       onClick={handleClaim}
                       disabled={isLoading}
@@ -408,7 +454,13 @@ export default function LandmarkModal({ landmark, onClose, onAuraClaimed }) {
                 </div>
               ) : (
                 <div className="bg-white/5 rounded-xl p-6 text-center">
-                  <p className="text-gray-400">Please connect your wallet on the home page to claim Aura</p>
+                  <p className="text-gray-400 mb-4">Connect your wallet to start earning Aura</p>
+                  <button
+                    onClick={() => openAuthModal()}
+                    className="px-6 py-2 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-medium transition-all duration-200"
+                  >
+                    Connect Wallet
+                  </button>
                 </div>
               )}
             </div>
