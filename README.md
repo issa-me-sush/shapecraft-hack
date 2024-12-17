@@ -2,9 +2,21 @@
 
 ShapeVerse is a Web3-powered geospatial metaverse that transforms real-world locations into interactive digital spaces, built on Shape Network. Users can explore landmarks, earn SAURA tokens, and build digital communities around real-world locations.
 
+## 🌟 Core Concept
+
+ShapeVerse transforms real-world locations into interactive digital spaces where:
+- Users discover and activate locations by physically visiting them
+- Each activated location becomes a unique digital landmark with its own AURA ecosystem
+- Locations evolve based on community engagement and AURA staking
+- Visual indicators show location status and activity levels on the 3D world map
+
 ## 🌟 Core Features
 
-
+### Interactive World Map
+- **3D Visualization**: Immersive 3D globe showing all activated locations
+- **Dynamic Markers**: Visual indicators showing location status and tier
+- **Real-time Updates**: Live updates of newly activated locations
+- **Location Tiers**: Different visual representations based on AURA activity
 
 ### Location-Based Mechanics
 - **Landmark Discovery**: Find and activate real-world locations
@@ -12,11 +24,31 @@ ShapeVerse is a Web3-powered geospatial metaverse that transforms real-world loc
 - **Auto-activation System**: New locations become active upon first visit
 - **Location NFTs**: Mint memories of visited places
 
+### Location Evolution System
+- **Tier System**: Locations evolve through tiers based on activity
+- **Visual Progression**: Enhanced visual markers for higher-tier locations
+- **Community Features**: Social elements tied to location development
+- **Staking Benefits**: Increased rewards for higher-tier locations
+
 ### Shape L2 Integration
 - **Account Kit Integration**: Seamless wallet connection and management
 - **Shape Network Support**: Built on Shape Sepolia testnet
 - **Smart Contract Interaction**: Direct blockchain transactions
 - **Token Gating**: Exclusive access to events and features
+
+## 💎️ Map Features
+
+### Visual Elements
+- **Dynamic Markers**: 3D indicators showing location status
+- **Tier-based Visuals**: Different styles for various location tiers
+- **Activity Indicators**: Visual feedback for active locations
+- **Interactive Elements**: Clickable locations with detailed information
+
+### Navigation
+- **Smooth Controls**: Intuitive map navigation and zoom
+- **Location Focus**: Automatic camera movement to selected locations
+- **Area Discovery**: Boundary system for discovering new locations
+- **Search Functionality**: Find specific locations and landmarks
 
 ## 💎 SAURA Token Features
 
