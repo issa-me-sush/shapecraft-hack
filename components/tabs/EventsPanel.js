@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useUser } from "@account-kit/react";
 import { ethers } from 'ethers';
 import { CONTRACT_ADDRESS, ABI } from '../../contracts/abi';
+import CreateEventModal from '../CreateEventModal';
 
 // Events Panel
 export function EventsPanel({ landmark }) {
@@ -34,7 +35,8 @@ export function EventsPanel({ landmark }) {
     try {
       const provider = new ethers.providers.Web3Provider(window.ethereum);
       const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, provider);
-      const balance = await contract.balanceOf(user.address);
+      const balance = await contract.balanceOf(user.address, 0);
+      console.log('Balance:', balance);
       return Number(ethers.utils.formatUnits(balance, 18)) >= minAura;
     } catch (error) {
       console.error('Error checking eligibility:', error);
@@ -56,12 +58,25 @@ export function EventsPanel({ landmark }) {
         return;
       }
 
+      // First check event access on-chain
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, provider.getSigner());
+      
+      // Check event access
+      const hasAccess = await contract.checkEventAccess(ethers.utils.parseUnits(minAura.toString(), 18));
+      if (!hasAccess) {
+        alert('Insufficient AURA balance for event registration');
+        return;
+      }
+
+      // Register in database
       const res = await fetch(`/api/events/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           eventId,
-          address: user.address
+          address: user.address,
+          placeId: landmark.place_id
         })
       });
 
@@ -70,9 +85,11 @@ export function EventsPanel({ landmark }) {
       // Refresh events list
       const updatedEvents = await fetch(`/api/events?placeId=${landmark.place_id}`).then(r => r.json());
       setEvents(updatedEvents);
+
+      alert('Successfully registered for event!');
     } catch (error) {
       console.error('Registration error:', error);
-      alert('Failed to register for event');
+      alert('Failed to register for event: ' + error.message);
     }
   };
 

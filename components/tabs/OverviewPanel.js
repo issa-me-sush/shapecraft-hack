@@ -8,6 +8,21 @@ function canClaim(lastClaimTime) {
   return now >= nextClaimTime;
 }
 
+function NFTLink({ tokenId }) {
+  const explorerUrl = `https://explorer-sepolia.shape.network/token/${process.env.NEXT_PUBLIC_CONTRACT_ADDRESS}/instance/${tokenId}`;
+  
+  return (
+    <a 
+      href={explorerUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="px-4 py-2 rounded-full bg-purple-500/20 text-purple-300 hover:bg-purple-500/30 transition-all"
+    >
+      View NFT #{tokenId} on Explorer
+    </a>
+  );
+}
+
 export function OverviewPanel({ 
   landmark, 
   user, 
@@ -117,6 +132,12 @@ export function OverviewPanel({
                 Your total visits to this location
               </div>
             </div>
+
+            {userStats?.nftTokenId && (
+              <div className="mt-4 text-center">
+                <NFTLink tokenId={userStats.nftTokenId} />
+              </div>
+            )}
           </div>
         </div>
       )}

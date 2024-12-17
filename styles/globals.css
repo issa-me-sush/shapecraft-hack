@@ -100,3 +100,26 @@ body {
   width: 100% !important;
   height: 100% !important;
 }
+
+@keyframes gradient-xy {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animate-gradient-xy {
+  background: linear-gradient(
+    45deg,
+    rgba(168, 85, 247, 0.1),
+    rgba(59, 130, 246, 0.1),
+    rgba(168, 85, 247, 0.1)
+  );
+  background-size: 200% 200%;
+  animation: gradient-xy 15s ease infinite;
+}

@@ -7,7 +7,7 @@ export function QuestsPanel() {
         {
           title: "Bridge to ShapeVerse",
           description: "Bridge minimum 0.05 ETH from any L2 to ShapeVerse Mainnet",
-          reward: 1000,
+          reward: 100,
           difficulty: "Easy",
           participants: 156,
           link: "https://relay.link/shape",

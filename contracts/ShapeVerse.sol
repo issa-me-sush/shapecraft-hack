@@ -6,8 +6,9 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/utils/Base64.sol";
+import "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
 
-contract ShapeVerse is ERC1155, Ownable, ReentrancyGuard {
+contract ShapeVerse is ERC1155, Ownable, ReentrancyGuard, ERC1155Holder {
     using Strings for uint256;
 
     // Constants
@@ -38,6 +39,7 @@ contract ShapeVerse is ERC1155, Ownable, ReentrancyGuard {
         address owner;
         string imageUri;
         uint256 timestamp;
+        bool isNFTMinted;
     }
 
     struct StakeInfo {
@@ -54,6 +56,8 @@ contract ShapeVerse is ERC1155, Ownable, ReentrancyGuard {
     event LocationActivated(string placeId, address activator);
     event LocationStaked(address indexed user, string placeId, uint256 amount);
     event StakeWithdrawn(address indexed user, string placeId, uint256 amount, uint256 rewards);
+    event Debug(string message, address account, uint256 value);
+    event Debug(string message, uint256 value1, uint256 value2);
 
     constructor() ERC1155("") Ownable(msg.sender) {
         // Mint initial AURA supply
@@ -111,7 +115,8 @@ contract ShapeVerse is ERC1155, Ownable, ReentrancyGuard {
             placeId,
             msg.sender,
             imageUri,
-            block.timestamp
+            block.timestamp,
+            true
         );
 
         _mint(msg.sender, nftCounter, 1, "");
@@ -165,17 +170,36 @@ contract ShapeVerse is ERC1155, Ownable, ReentrancyGuard {
         return super.isApprovedForAll(account, operator);
     }
 
+    // Add custom errors
+    error NotActive(string placeId);
+    error InsufficientBalance(uint256 required, uint256 actual);
+    error NotApproved(address user, address operator);
+    error TransferFailed();
+
     // Modify staking functions to use ERC1155
     function stake(string memory placeId, uint256 amount) external nonReentrant {
-        require(activeLocations[placeId], "Location not active");
-        require(balanceOf(msg.sender, AURA_TOKEN_ID) >= amount, "Insufficient balance");
+        if (!activeLocations[placeId]) {
+            revert("LOCATION_NOT_ACTIVE");
+        }
 
-        safeTransferFrom(msg.sender, address(this), AURA_TOKEN_ID, amount, "");
+        if (amount == 0) {
+            revert("ZERO_STAKE_AMOUNT");
+        }
 
+        uint256 userBalance = balanceOf(msg.sender, AURA_TOKEN_ID);
+        if (userBalance < amount) {
+            revert("INSUFFICIENT_BALANCE");
+        }
+
+        // Transfer tokens to contract
+        _safeTransferFrom(msg.sender, address(this), AURA_TOKEN_ID, amount, "");
+
+        // Update stake info
         StakeInfo storage userStake = userStakes[msg.sender][placeId];
         if (userStake.amount > 0) {
             _claimStakingRewards(msg.sender, placeId);
         }
+
         userStake.amount += amount;
         userStake.timestamp = block.timestamp;
         totalLocationStakes[placeId] += amount;
@@ -265,5 +289,34 @@ contract ShapeVerse is ERC1155, Ownable, ReentrancyGuard {
             lastClaim[user][placeId],
             _hasVisited
         );
+    }
+
+    function getNFTInfo(uint256 tokenId) external view returns (
+        string memory placeId,
+        address owner,
+        string memory imageUri,
+        uint256 timestamp,
+        bool isNFTMinted
+    ) {
+        LocationNFT memory nft = locationNFTs[tokenId];
+        require(nft.timestamp != 0, "Token does not exist");
+        return (
+            nft.placeId,
+            nft.owner,
+            nft.imageUri,
+            nft.timestamp,
+            nft.isNFTMinted
+        );
+    }
+
+    // Add this override to resolve the conflict
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        virtual
+        override(ERC1155, ERC1155Holder)
+        returns (bool)
+    {
+        return super.supportsInterface(interfaceId);
     }
 } 

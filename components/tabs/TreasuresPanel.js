@@ -33,6 +33,26 @@ export function TreasuresPanel({ landmark }) {
     fetchStakingInfo();
   }, [user?.address, landmark?.place_id]);
 
+  function decodeError(error) {
+    // Known error selectors
+    const errorSelectors = {
+      '0x57f447ce': 'NotActive',
+      '0x9912c1bc': 'InsufficientBalance',
+      '0x4b16b12d': 'NotApproved',
+      '0x90b8ec18': 'TransferFailed'
+    };
+
+    try {
+      // Get the error selector from the revert data
+      const selector = error.data.data.slice(0, 10);
+      const errorName = errorSelectors[selector] || 'Unknown error';
+      console.log('Error selector:', selector, 'Error name:', errorName);
+      return errorName;
+    } catch (e) {
+      return 'Unknown error format';
+    }
+  }
+
   const handleStake = async () => {
     if (!user?.address || !stakingAmount) return;
 
@@ -42,9 +62,38 @@ export function TreasuresPanel({ landmark }) {
       const signer = provider.getSigner();
       const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
 
+      // Add pre-checks
+      const userBalance = await contract.balanceOf(user.address, 0);
+      console.log('User balance:', ethers.utils.formatUnits(userBalance, 18));
+
+      const isApproved = await contract.isApprovedForAll(user.address, CONTRACT_ADDRESS);
+      console.log('Is approved:', isApproved);
+
+      const locationActive = await contract.activeLocations(landmark.place_id);
+      console.log('Location active:', locationActive);
+
+      // Check if location needs to be activated
+      if (!locationActive) {
+        console.log('Location not active, claiming AURA first...');
+        const claimTx = await contract.claimAura(landmark.place_id, {
+          gasLimit: 300000
+        });
+        await claimTx.wait();
+        console.log('Location activated via claim');
+      }
+
+      // Convert and validate amount
       const amountWei = ethers.utils.parseUnits(stakingAmount, 18);
-      const tx = await contract.stake(landmark.place_id, amountWei);
+      console.log('Staking amount (wei):', amountWei.toString());
+      
+      // Attempt stake with manual gas limit
+      console.log('Attempting stake...');
+      const tx = await contract.stake(landmark.place_id, amountWei, {
+        gasLimit: 300000
+      });
+      console.log('Stake transaction:', tx.hash);
       await tx.wait();
+      console.log('Stake confirmed');
 
       setStakingAmount('');
       await fetchStakingInfo();
@@ -110,19 +159,19 @@ export function TreasuresPanel({ landmark }) {
           {[
             {
               name: "Digital Garden",
-              cost: 1000,
+              cost: 10,
               bonus: "+5% Aura Generation",
               icon: "🌸"
             },
             {
               name: "Community Hub",
-              cost: 2000,
+              cost: 20,
               bonus: "+10% Visitor Rewards",
               icon: "🏛️"
             },
             {
               name: "Quest Beacon",
-              cost: 1500,
+              cost: 15,
               bonus: "Unlock Special Quests",
               icon: "🎯"
             },
@@ -156,7 +205,7 @@ export function TreasuresPanel({ landmark }) {
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-xl font-bold text-purple-400">Referral Boost</h3>
           <div className="px-3 py-1 rounded-full bg-purple-500/20 text-purple-300">
-            +20% Rewards
+            {`+0.5% for 7 days `}
           </div>
         </div>
         <p className="text-gray-400 mb-4">
@@ -184,19 +233,19 @@ export function TreasuresPanel({ landmark }) {
               name: "Early Adopter",
               description: "Among first 100 stakers",
               progress: 45,
-              reward: 500
+              reward: 50
             },
             {
               name: "Diamond Hands",
               description: "Stake for 30 days",
               progress: 80,
-              reward: 1000
+              reward: 10
             },
             {
               name: "Community Leader",
               description: "Refer 5 friends",
               progress: 20,
-              reward: 2000
+              reward: 20
             }
           ].map((achievement, idx) => (
             <div key={idx} className="bg-black/30 rounded-lg p-4 border border-purple-500/20">
