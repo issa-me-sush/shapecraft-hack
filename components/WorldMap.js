@@ -42,6 +42,52 @@ const BOUNDARY_BUFFER = 0.5; // 50% buffer beyond visible bounds
 const MIN_VISITORS_THRESHOLD = 10;
 const FETCH_THRESHOLD = 0.75; // Refetch when user reaches 75% of buffer
 
+const PLACE_TIERS = {
+  LEGENDARY: {
+    minAura: 100000,
+    minZoom: 3,
+    tag: '🌟 Legendary',
+    color: '#FFD700',
+    animation: {
+      scale: [1, 1.2, 1],
+      duration: 2000,
+      glow: true
+    }
+  },
+  EPIC: {
+    minAura: 50000,
+    minZoom: 5,
+    tag: '✨ Epic',
+    color: '#9B30FF',
+    animation: {
+      scale: [1, 1.15, 1],
+      duration: 1800
+    }
+  },
+  RARE: {
+    minAura: 10000,
+    minZoom: 8,
+    tag: '💫 Rare',
+    color: '#4169E1',
+    animation: {
+      scale: [1, 1.1, 1],
+      duration: 1600
+    }
+  },
+  UNCOMMON: {
+    minAura: 1000,
+    minZoom: 10,
+    tag: '⭐ Uncommon',
+    color: '#32CD32'
+  },
+  COMMON: {
+    minAura: 0,
+    minZoom: 12,
+    tag: '🔮 Common',
+    color: '#808080'
+  }
+};
+
 export default function WorldMap() {
   const user = useUser();
   const { openAuthModal } = useAuthModal();
@@ -305,31 +351,137 @@ export default function WorldMap() {
     }
   }, [mapBounds]);
 
+  const createAnimatedMarker = (location) => {
+    const { totalAura = 0 } = location;
+    
+    // Find the appropriate tier
+    const tier = Object.entries(PLACE_TIERS).find(([_, config]) => 
+      totalAura >= config.minAura
+    )?.[1] || PLACE_TIERS.COMMON;
+
+    // Create marker element
+    const el = document.createElement('div');
+    el.className = 'animated-marker';
+    
+    // Apply tier-specific styles
+    el.style.backgroundColor = tier.color;
+    el.style.width = '20px';
+    el.style.height = '20px';
+    el.style.borderRadius = '50%';
+    el.style.cursor = 'pointer';
+
+    // Add glow effect for legendary places
+    if (tier.animation?.glow) {
+      el.style.boxShadow = `0 0 20px ${tier.color}`;
+    }
+
+    // Add tier tag
+    const tag = document.createElement('div');
+    tag.className = 'marker-tag';
+    tag.textContent = tier.tag;
+    el.appendChild(tag);
+
+    // Add spring animation
+    if (tier.animation) {
+      const { scale, duration } = tier.animation;
+      const animation = el.animate([
+        { transform: `scale(${scale[0]})` },
+        { transform: `scale(${scale[1]})` },
+        { transform: `scale(${scale[2]})` }
+      ], {
+        duration,
+        iterations: Infinity,
+        easing: 'ease-in-out'
+      });
+    }
+
+    return new mapboxgl.Marker(el)
+      .setLngLat(location.coordinates)
+      .addTo(map.current);
+  };
+
   const loadLocationData = async (bounds) => {
     try {
+      const currentZoom = map.current.getZoom();
+      
+      // Determine which tiers to fetch based on zoom level
+      const eligibleTiers = Object.entries(PLACE_TIERS).filter(
+        ([_, config]) => currentZoom >= config.minZoom
+      );
+
+      if (eligibleTiers.length === 0) return;
+
+      const minAura = Math.min(...eligibleTiers.map(([_, config]) => config.minAura));
+
       const response = await fetch('/api/locations/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           bounds,
-          minVisitors: MIN_VISITORS_THRESHOLD
+          minAura,
+          includeEvents: currentZoom >= 15 // Fetch events at high zoom
         })
       });
 
-      const locations = await response.json();
+      const { locations, events } = await response.json();
       
+      // Filter out already loaded locations
       const newLocations = locations.filter(loc => !loadedLocations.has(loc.placeId));
       
+      // Update loaded locations set
       const updatedLocations = new Set(loadedLocations);
       newLocations.forEach(loc => updatedLocations.add(loc.placeId));
       setLoadedLocations(updatedLocations);
 
+      // Create animated markers for new locations
       newLocations.forEach(location => {
-        createMarker({
-          ...location,
-          coordinates: location.coordinates.coordinates
-        });
+        createAnimatedMarker(location);
       });
+
+      // Add event markers if zoom level is appropriate
+      if (currentZoom >= 15 && events?.length) {
+        events.forEach(event => {
+          const eventMarker = document.createElement('div');
+          eventMarker.className = 'event-marker';
+          
+          // Add Three.js animation for events
+          const scene = new THREE.Scene();
+          const camera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);
+          const renderer = new THREE.WebGLRenderer({ alpha: true });
+          renderer.setSize(40, 40);
+          
+          const geometry = new THREE.SphereGeometry(1, 32, 32);
+          const material = new THREE.MeshPhongMaterial({
+            color: 0x88ff88,
+            emissive: 0x44aa44,
+            transparent: true,
+            opacity: 0.8
+          });
+          
+          const sphere = new THREE.Mesh(geometry, material);
+          scene.add(sphere);
+          
+          const light = new THREE.PointLight(0xffffff, 1, 100);
+          light.position.set(10, 10, 10);
+          scene.add(light);
+          
+          camera.position.z = 5;
+          
+          function animate() {
+            requestAnimationFrame(animate);
+            sphere.rotation.x += 0.01;
+            sphere.rotation.y += 0.01;
+            renderer.render(scene, camera);
+          }
+          animate();
+          
+          eventMarker.appendChild(renderer.domElement);
+          
+          new mapboxgl.Marker(eventMarker)
+            .setLngLat(event.coordinates)
+            .addTo(map.current);
+        });
+      }
     } catch (error) {
       console.error('Error loading locations:', error);
     }

@@ -63,7 +63,7 @@ export default function Home() {
       <div className="text-center space-y-8 max-w-4xl mx-auto">
         <h1 className="text-6xl md:text-8xl font-bold">
           <span className="bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent">
-            GeoVerse
+            ShapeVerse
           </span>
         </h1>
         
