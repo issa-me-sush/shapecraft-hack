@@ -6,6 +6,8 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import LandmarkModal from './LandmarkModal';
 import { motion } from 'framer-motion';
 import { useSpring, animated } from '@react-spring/web';
+import { ethers } from 'ethers';
+import { CONTRACT_ADDRESS, ABI } from '../contracts/abi';
 
 // Set the token before any map operations
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
@@ -52,6 +54,35 @@ export default function WorldMap() {
   const [isLoading, setIsLoading] = useState(false);
   const [mapBounds, setMapBounds] = useState(null);
   const [loadedLocations, setLoadedLocations] = useState(new Set());
+
+  // Define the spring animation outside JSX
+  const spinAnimation = useSpring({
+    from: { rotateZ: 0 },
+    to: { rotateZ: 360 },
+    loop: true,
+    config: { duration: 10000 }
+  });
+
+  const fetchAuraBalance = async () => {
+    if (!user?.address) return;
+
+    try {
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, provider);
+      const balance = await contract.balanceOf(user.address, 0); // 0 is AURA token ID
+      setAura(Number(ethers.utils.formatUnits(balance, 18)));
+    } catch (error) {
+      console.error('Error fetching AURA balance:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchAuraBalance();
+  }, [user?.address]);
+
+  const handleAuraClaimed = async (amount) => {
+    await fetchAuraBalance(); // Fetch actual balance instead of just adding
+  };
 
   useEffect(() => {
     if (!mapContainer.current) return;
@@ -401,15 +432,13 @@ export default function WorldMap() {
               className="order-1 sm:order-2 h-14 px-6 rounded-xl bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-md border border-white/10 shadow-xl"
             >
               <div className="flex items-center h-full gap-3">
-                <animated.div className="text-2xl">
-                  {useSpring({
-                    from: { rotateZ: 0 },
-                    to: { rotateZ: 360 },
-                    loop: true,
-                    config: { duration: 10000 }
-                  }).rotateZ.to(val => (
-                    <span style={{ transform: `rotate(${val}deg)` }}>✨</span>
-                  ))}
+                <animated.div 
+                  className="text-2xl"
+                  style={{ 
+                    transform: spinAnimation.rotateZ.to(val => `rotate(${val}deg)`)
+                  }}
+                >
+                  ✨
                 </animated.div>
                 <div className="flex flex-col">
                   <span className="text-sm font-medium text-white/90">Total Aura</span>
@@ -444,7 +473,7 @@ export default function WorldMap() {
             <LandmarkModal 
               landmark={selectedSpot}
               onClose={() => setSelectedSpot(null)}
-              onAuraClaimed={(amount) => setAura(prev => prev + amount)}
+              onAuraClaimed={handleAuraClaimed}
             />
           </div>
         </div>
