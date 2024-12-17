@@ -294,7 +294,11 @@ export default function LandmarkModal({ landmark, onClose, onAuraClaimed }) {
   console.log("Landmark data received:", landmark); // Debug log
   const [selectedTab, setSelectedTab] = useState(0);
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
-  const [userStats, setUserStats] = useState(null);
+  const [userStats, setUserStats] = useState({
+    totalAuraEarned: 0,
+    lastClaim: null,
+    totalVisits: 0
+  });
   const [isLoading, setIsLoading] = useState(false);
   const [claimStatus, setClaimStatus] = useState({
     canClaim: false,
@@ -317,42 +321,76 @@ export default function LandmarkModal({ landmark, onClose, onAuraClaimed }) {
   // Fetch user stats for this location
   useEffect(() => {
     const fetchUserStats = async () => {
-      if (!user?.address || !landmark.place_id) return;
+      if (!user?.address || !landmark?.place_id) {
+        console.log('Missing required data:', { user: user?.address, placeId: landmark?.place_id });
+        return;
+      }
 
       try {
-        // Get provider and contract
+        console.log('[FETCHING_USER_STATS] Starting fetch for:', {
+          address: user.address,
+          placeId: landmark.place_id
+        });
+
         const provider = new ethers.providers.Web3Provider(window.ethereum);
         const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, provider);
 
-        // Get last claim time from contract
+        // Get last claim time
         const lastClaimTime = await contract.lastClaim(user.address, landmark.place_id);
-        const now = Date.now();
-        
-        // Convert BigNumber to number and multiply by 1000 for milliseconds
-        const lastClaimMs = lastClaimTime.toNumber() * 1000;
-        const nextClaimTime = lastClaimMs + (24 * 60 * 60 * 1000);
-        
-        setClaimStatus({
-          canClaim: now >= nextClaimTime,
-          nextClaimTime: nextClaimTime
+        console.log('[LAST_CLAIM_TIME]', {
+          raw: lastClaimTime.toString(),
+          timestamp: new Date(lastClaimTime.toNumber() * 1000)
         });
 
-        // Get user's total Aura balance
+        const now = Date.now();
+        const lastClaimMs = lastClaimTime.toNumber() * 1000;
+        const nextClaimTime = lastClaimMs + (24 * 60 * 60 * 1000);
+
+        // Get balance
         const auraBalance = await contract.balanceOf(user.address);
-        
-        setUserStats({
-          totalAuraEarned: Number(ethers.utils.formatUnits(auraBalance, 18)),
-          lastClaim: new Date(lastClaimMs),
-          totalVisits: 1 // This could be tracked differently if needed
+        console.log('[AURA_BALANCE]', {
+          raw: auraBalance.toString(),
+          formatted: ethers.utils.formatUnits(auraBalance, 18)
+        });
+
+        // Update states
+        setClaimStatus(prevState => {
+          const newState = {
+            canClaim: now >= nextClaimTime,
+            nextClaimTime: nextClaimTime
+          };
+          console.log('[CLAIM_STATUS_UPDATE]', {
+            previous: prevState,
+            new: newState
+          });
+          return newState;
+        });
+
+        setUserStats(prevState => {
+          const newState = {
+            totalAuraEarned: Number(ethers.utils.formatUnits(auraBalance, 18)),
+            lastClaim: new Date(lastClaimMs),
+            totalVisits: prevState.totalVisits || 1
+          };
+          console.log('[USER_STATS_UPDATE]', {
+            previous: prevState,
+            new: newState
+          });
+          return newState;
         });
 
       } catch (error) {
-        console.error('Error fetching user stats:', error);
+        console.error('[FETCH_ERROR]', {
+          message: error.message,
+          code: error.code,
+          data: error.data,
+          stack: error.stack
+        });
       }
     };
 
     fetchUserStats();
-  }, [user, landmark.place_id]);
+  }, [user?.address, landmark?.place_id]); // Add proper dependencies
 
   // Handle aura claim
   const handleClaim = async () => {
@@ -604,18 +642,27 @@ export default function LandmarkModal({ landmark, onClose, onAuraClaimed }) {
               {user && (
                 <div className="bg-white/5 rounded-xl p-4">
                   <h3 className="text-lg font-bold text-purple-400 mb-3">Your Activity</h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <div className="text-sm text-gray-400 mb-1">Your Visits</div>
-                      <div className="text-xl font-bold text-white">
-                        {userStats?.totalVisits || 0}
+                  <div className="stats-container">
+                    <div className="stat">
+                      <div className="stat-title">Total Aura Earned</div>
+                      <div className="stat-value">
+                        {userStats?.totalAuraEarned?.toFixed(2) || '0'} AURA
                       </div>
                     </div>
-                    <div>
-                      <div className="text-sm text-gray-400 mb-1">Aura Earned</div>
-                      <div className="text-xl font-bold text-purple-400">
-                        {userStats?.totalAuraEarned || 0}
+                    
+                    <div className="stat">
+                      <div className="stat-title">Last Claim</div>
+                      <div className="stat-value">
+                        {userStats?.lastClaim ? 
+                          userStats.lastClaim.toLocaleDateString() : 
+                          'Never'
+                        }
                       </div>
+                    </div>
+                    
+                    <div className="stat">
+                      <div className="stat-title">Total Visits</div>
+                      <div className="stat-value">{userStats?.totalVisits || 0}</div>
                     </div>
                   </div>
                 </div>
