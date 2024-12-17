@@ -4,11 +4,7 @@ ShapeVerse is a Web3-powered geospatial metaverse that transforms real-world loc
 
 ## 🌟 Core Features
 
-### Interactive Globe Interface
-- **3D Visualization**: Dynamic globe rendering using Three.js
-- **Real-time Location Mapping**: Interactive landmarks displayed on the globe
-- **Animated Arcs**: Visual connections between active locations
-- **Custom Styling**: Themed globe appearance with ambient lighting
+
 
 ### Location-Based Mechanics
 - **Landmark Discovery**: Find and activate real-world locations
@@ -16,7 +12,7 @@ ShapeVerse is a Web3-powered geospatial metaverse that transforms real-world loc
 - **Auto-activation System**: New locations become active upon first visit
 - **Location NFTs**: Mint memories of visited places
 
-### Web3 Integration
+### Shape L2 Integration
 - **Account Kit Integration**: Seamless wallet connection and management
 - **Shape Network Support**: Built on Shape Sepolia testnet
 - **Smart Contract Interaction**: Direct blockchain transactions
@@ -24,7 +20,7 @@ ShapeVerse is a Web3-powered geospatial metaverse that transforms real-world loc
 
 ## 💎 SAURA Token Features
 
-### Token Economics
+### Tokenomics
 - **Symbol**: SAURA
 - **Initial Supply**: 1,000,000 SAURA
 - **Distribution**: Daily claims and quest rewards
