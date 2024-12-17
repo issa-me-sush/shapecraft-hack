@@ -34,6 +34,9 @@ export default function Home() {
     initialPosition: { lat: 22.3193, lng: 114.1694 },
     autoRotate: true,
     autoRotateSpeed: 0.5,
+    preserveAspectRatio: true,
+    width: 800,
+    height: 800
   };
   const handleEnterWorld = () => {
     if (user) {
@@ -46,47 +49,65 @@ export default function Home() {
 
   return (
     <div>
-    <div className="relative min-h-screen bg-gradient-to-b from-black via-purple-900 to-black overflow-hidden">
+    <div className="relative min-h-screen bg-gradient-to-b from-black via-[#0a192f] to-black overflow-hidden">
     {/* Globe in the background */}
-    <div className="absolute inset-0 z-0 pointer-events-auto">
-      <World data={sampleArcs} globeConfig={globeConfig} />
+    <div className="fixed inset-0 z-0 pointer-events-auto flex items-center justify-center overflow-hidden">
+      <div className="relative w-[800px] h-[800px] flex-shrink-0">
+        <World data={sampleArcs} globeConfig={{
+          ...globeConfig,
+          globeColor: "#0a192f",
+          emissive: "#0f2847",
+          atmosphereColor: "#ffffff",
+          ambientLight: "#4a5568",
+          polygonColor: "rgba(255,255,255,0.3)"
+        }} />
+      </div>
     </div>
   
     {/* Animated background elements */}
-    <div className="absolute inset-0 z-[-1] pointer-events-none">
-      <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-20"></div>
-      <div className="absolute -inset-[10px] bg-gradient-to-b from-transparent via-purple-500/10 to-transparent blur-3xl"></div>
+    <div className="fixed inset-0 z-[-1] pointer-events-none">
+      <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10"></div>
+      <div className="absolute -inset-[10px] bg-gradient-to-b from-transparent via-blue-900/5 to-transparent blur-3xl"></div>
     </div>
   
     {/* Main content */}
     <div className="relative z-10 min-h-screen flex flex-col items-center justify-center px-4 pointer-events-none">
+      <div className="absolute top-8 left-8">
+        <img 
+          src="/shapelogo.png" 
+          alt="ShapeVerse" 
+          className="w-16 h-16 filter invert"
+        />
+      </div>
       <div className="text-center space-y-8 max-w-4xl mx-auto">
         <h1 className="text-6xl md:text-8xl font-bold">
-          <span className="bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent">
+          <span className="bg-gradient-to-r from-gray-100 via-blue-100 to-gray-200 bg-clip-text text-transparent">
             ShapeVerse
           </span>
         </h1>
         
-        <p className="text-xl md:text-2xl text-gray-300 max-w-2xl mx-auto">
+        <p className="text-xl md:text-2xl text-gray-400 max-w-2xl mx-auto font-light">
           Enter a world where digital and physical realities merge. Build, explore, and connect in ways never before possible.
         </p>
   
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pointer-events-auto">
           {user ? (
             <>
-              <div className="px-6 py-2 rounded-full bg-purple-900/50 backdrop-blur-sm border border-purple-500/20">
-                <span className="text-purple-300">Connected: </span>
-                <span className="text-purple-100">{user.address.slice(0, 6)}...{user.address.slice(-4)}</span>
+              <div className="px-6 py-2 rounded-full bg-blue-950/30 backdrop-blur-sm border border-white/10">
+                <span className="text-blue-200">Connected: </span>
+                <span className="text-white/80">
+                  {user.address.slice(0, 6)}...{user.address.slice(-4)}
+                </span>
               </div>
               <button
                 onClick={handleEnterWorld}
-                className="px-8 py-3 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-purple-500/25"
+                className="px-8 py-3 rounded-full bg-gradient-to-r from-gray-100 to-white hover:from-gray-200 hover:to-gray-100 text-[#0a192f] font-medium transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-white/25"
               >
                 Enter World
               </button>
               <button
                 onClick={logout}
-                className="px-6 py-2 rounded-full border border-red-500/20 hover:bg-red-500/10 text-red-400 font-medium transition-all duration-200"
+                className="px-6 py-2 rounded-full border border-white/10 hover:bg-white/5 text-gray-400"
               >
                 Disconnect
               </button>
@@ -94,10 +115,10 @@ export default function Home() {
           ) : (
             <button
               onClick={handleEnterWorld}
-              className="group relative px-8 py-3 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-purple-500/25"
+              className="group relative px-8 py-3 rounded-full bg-gradient-to-r from-white to-gray-100 hover:from-gray-100 hover:to-white text-[#0a192f]"
             >
               <span className="relative z-10">Connect to Enter</span>
-              <div className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-400 to-purple-500 opacity-0 group-hover:opacity-20 blur transition-opacity duration-200"></div>
+              <div className="absolute inset-0 rounded-full bg-white opacity-0 group-hover:opacity-20 blur"></div>
             </button>
           )}
         </div>
@@ -105,7 +126,7 @@ export default function Home() {
     </div>
      
   </div>
-  <div className="grid md:grid-cols-3 gap-6 mt-[-10] max-w-6xl mx-auto px-4">
+  <div className="grid md:grid-cols-3 gap-6 mt-[-10] max-w-6xl mx-auto px-4 bg-[#0a192f]">
   {[
     {
       title: "Explore",
