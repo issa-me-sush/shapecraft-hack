@@ -1,9 +1,7 @@
-import { useUser } from "@account-kit/react";
-import { useRouter } from 'next/router';
+import { useUser, useAuthModal } from "@account-kit/react";
 import { useEffect } from 'react';
 import dynamic from 'next/dynamic';
 
-// Import map component dynamically to avoid SSR issues
 const WorldMap = dynamic(() => import('../components/WorldMap'), { 
   ssr: false,
   loading: () => (
@@ -17,16 +15,16 @@ const WorldMap = dynamic(() => import('../components/WorldMap'), {
 
 export default function WorldPage() {
   const user = useUser();
-  const router = useRouter();
+  const { openAuthModal } = useAuthModal();
 
   useEffect(() => {
     if (!user) {
-      router.push('/?open=true');
+      openAuthModal();
     }
-  }, [user, router]);
+  }, [user, openAuthModal]);
 
   return (
-    <div className="h-screen w-full bg-black">
+    <div className="relative h-screen w-full bg-black">
       <WorldMap />
     </div>
   );

@@ -9,15 +9,12 @@ export default function Home() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleEnterWorld = async () => {
-    if (!user) {
-      openAuthModal();
+  const handleEnterWorld = () => {
+    if (user) {
+      router.push('/world');
     } else {
-      setIsLoading(true);
-      // Simulate loading for smooth transition
-      setTimeout(() => {
-        router.push('/world');
-      }, 1500);
+      // Handle authentication
+      openAuthModal();
     }
   };
 
