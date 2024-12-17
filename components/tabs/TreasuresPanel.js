@@ -88,18 +88,77 @@ export function TreasuresPanel({ landmark }) {
       
       // Attempt stake with manual gas limit
       console.log('Attempting stake...');
-      const tx = await contract.stake(landmark.place_id, amountWei, {
-        gasLimit: 300000
-      });
+      const tx = await contract.stake(landmark.place_id, amountWei);
       console.log('Stake transaction:', tx.hash);
       await tx.wait();
       console.log('Stake confirmed');
 
       setStakingAmount('');
       await fetchStakingInfo();
+
+      // Update location stats
+      try {
+        await fetch('/api/locations/update-stats', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            placeId: landmark.place_id,
+            name: landmark.name,
+            coordinates: landmark.coordinates,
+            action: 'STAKE',
+            amount: Number(stakingAmount),
+            userAddress: user.address
+          })
+        });
+      } catch (error) {
+        console.error('Failed to update location stats:', error);
+      }
     } catch (error) {
       console.error('Staking error:', error);
       alert('Failed to stake: ' + (error.reason || error.message));
+    } finally {
+      setIsStaking(false);
+    }
+  };
+
+  const handleUnstake = async () => {
+    if (!user?.address || !userStakeInfo.stakedAmount) return;
+
+    setIsStaking(true);
+    try {
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const signer = provider.getSigner();
+      const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
+
+      // Attempt unstake with manual gas limit
+      console.log('Attempting unstake...');
+      const tx = await contract.unstake(landmark.place_id);
+      console.log('Unstake transaction:', tx.hash);
+      await tx.wait();
+      console.log('Unstake confirmed');
+
+      await fetchStakingInfo();
+
+      // Update location stats
+      try {
+        await fetch('/api/locations/update-stats', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            placeId: landmark.place_id,
+            name: landmark.name,
+            coordinates: landmark.coordinates,
+            action: 'UNSTAKE',
+            amount: userStakeInfo.stakedAmount,
+            userAddress: user.address
+          })
+        });
+      } catch (error) {
+        console.error('Failed to update location stats:', error);
+      }
+    } catch (error) {
+      console.error('Unstake error:', error);
+      alert('Failed to unstake: ' + (error.reason || error.message));
     } finally {
       setIsStaking(false);
     }

@@ -34,6 +34,7 @@
     "tailwind-merge": "^2.5.5",
     "three": "^0.171.0",
     "three-globe": "^2.37.2",
+    "threebox-plugin": "^2.2.7",
     "viem": "^2.21.55"
   },
   "devDependencies": {

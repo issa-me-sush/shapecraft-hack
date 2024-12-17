@@ -309,6 +309,24 @@ export default function LandmarkModal({ landmark, onClose, onAuraClaimed }) {
           nextClaimTime: Date.now() + (24 * 60 * 60 * 1000)
         });
 
+        // Update location stats
+        try {
+          await fetch('/api/locations/update-stats', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              placeId: landmark.place_id,
+              name: landmark.name,
+              coordinates: landmark.coordinates,
+              action: 'CLAIM',
+              amount: Number(auraAmount),
+              userAddress: user.address
+            })
+          });
+        } catch (error) {
+          console.error('Failed to update location stats:', error);
+        }
+
         onAuraClaimed(Number(auraAmount));
       }
     } catch (error) {

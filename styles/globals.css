@@ -168,14 +168,14 @@ body {
   top: -25px;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(0, 0, 0, 0.8);
-  color: white;
-  padding: 2px 6px;
-  border-radius: 4px;
+  background: transparent;
+  color: #fff;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
   font-size: 12px;
   white-space: nowrap;
-  opacity: 0;
+  opacity: 1;
   transition: opacity 0.2s ease;
+  pointer-events: none;
 }
 
 .animated-marker:hover .marker-tag {
@@ -200,5 +200,102 @@ body {
   100% {
     transform: scale(1);
     opacity: 0.8;
+  }
+}
+
+.place-marker {
+  position: relative;
+  width: 50px;
+  height: 50px;
+  transform-origin: bottom center;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.icon-container {
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon-3d {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+}
+
+.place-marker:hover .icon-container {
+  transform: scale(1.2) translateY(-5px);
+}
+
+.event-marker-container {
+  position: relative;
+}
+
+.event-tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 8px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.event-marker-container:hover .event-tooltip {
+  opacity: 1;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.sparkles {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.sparkles::before,
+.sparkles::after {
+  content: "✨";
+  position: absolute;
+  animation: sparkle 2s ease-in-out infinite;
+}
+
+.sparkles::before {
+  left: -10px;
+  top: -10px;
+  animation-delay: 0s;
+}
+
+.sparkles::after {
+  right: -10px;
+  bottom: -10px;
+  animation-delay: 1s;
+}
+
+@keyframes sparkle {
+  0%, 100% { 
+    transform: scale(1) rotate(0deg);
+    opacity: 0.5;
+  }
+  50% { 
+    transform: scale(1.2) rotate(180deg);
+    opacity: 1;
   }
 }

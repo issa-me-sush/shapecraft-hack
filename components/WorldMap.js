@@ -8,6 +8,10 @@ import { motion } from 'framer-motion';
 import { useSpring, animated } from '@react-spring/web';
 import { ethers } from 'ethers';
 import { CONTRACT_ADDRESS, ABI } from '../contracts/abi';
+import * as THREE from 'three';
+import { Html } from '@react-three/drei';
+import { Canvas } from '@react-three/fiber';
+import { Threebox } from 'threebox-plugin';
 
 // Set the token before any map operations
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
@@ -85,6 +89,35 @@ const PLACE_TIERS = {
     minZoom: 12,
     tag: '🔮 Common',
     color: '#808080'
+  }
+};
+
+// Add 3D icon configurations
+const PLACE_ICONS = {
+  LEGENDARY: {
+    model: '🏰',
+    scale: 1.2,
+    height: 150
+  },
+  EPIC: {
+    model: '⛪',
+    scale: 1.1,
+    height: 120
+  },
+  RARE: {
+    model: '🏛️',
+    scale: 1,
+    height: 100
+  },
+  UNCOMMON: {
+    model: '🏢',
+    scale: 0.9,
+    height: 80
+  },
+  COMMON: {
+    model: '🏠',
+    scale: 0.8,
+    height: 60
   }
 };
 
@@ -227,6 +260,45 @@ export default function WorldMap() {
         
         map.current.addControl(new mapboxgl.NavigationControl());
 
+        // Wait for the style to load before adding markers
+        map.current.on('style.load', () => {
+          // Central Park marker
+          const centralPark = {
+            name: 'Central Park',
+            coordinates: [-73.968285, 40.785091],
+            hasEvents: true
+          };
+          
+          // Create marker element
+          const el = document.createElement('div');
+          el.className = 'place-marker animate-float';
+          
+          el.innerHTML = `
+            <div class="icon-container relative">
+              <div class="icon-3d absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                <span style="font-size: 32px">🌳</span>
+                <div class="sparkles"></div>
+              </div>
+              <div class="marker-tag absolute -top-8 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
+                <div class="flex items-center gap-2 bg-black/80 px-3 py-1 rounded-full">
+                  <span class="text-white">Central Park</span>
+                  <span class="text-xs text-purple-300">Active</span>
+                </div>
+              </div>
+            </div>
+          `;
+          
+          // Create and add the marker
+          const marker = new mapboxgl.Marker({
+            element: el,
+            anchor: 'bottom' // This ensures the marker point is at the bottom center
+          })
+          .setLngLat(centralPark.coordinates)
+          .addTo(map.current);
+
+          console.log('Added Central Park marker at:', centralPark.coordinates);
+        });
+
         map.current.on('click', ['poi-label', 'place-label'], async (e) => {
           if (!e.features?.length) return;
 
@@ -272,6 +344,75 @@ export default function WorldMap() {
 
         map.current.on('mouseleave', ['poi-label', 'place-label'], () => {
           map.current.getCanvas().style.cursor = '';
+        });
+
+        // Add 3D floating icon layer
+        map.current.addLayer({
+          id: 'custom-threebox-model',
+          type: 'custom',
+          renderingMode: '3d',
+          onAdd: function () {
+            // Create Three.js scene
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({ alpha: true });
+            renderer.setSize(50, 50);
+            
+            // Create glowing sphere
+            const geometry = new THREE.SphereGeometry(1, 32, 32);
+            const material = new THREE.MeshPhongMaterial({
+              color: 0x00ff00,
+              emissive: 0x44aa44,
+              transparent: true,
+              opacity: 0.8
+            });
+            
+            const sphere = new THREE.Mesh(geometry, material);
+            scene.add(sphere);
+            
+            // Add lights
+            const light = new THREE.PointLight(0xffffff, 1, 100);
+            light.position.set(10, 10, 10);
+            scene.add(light);
+            
+            const ambientLight = new THREE.AmbientLight(0x404040);
+            scene.add(ambientLight);
+            
+            camera.position.z = 5;
+            
+            // Create marker element
+            const el = document.createElement('div');
+            el.appendChild(renderer.domElement);
+            el.style.position = 'absolute';
+            el.style.left = '-25px';
+            el.style.top = '-25px';
+            
+            // Add marker to map
+            new mapboxgl.Marker({
+              element: el,
+              anchor: 'center'
+            })
+            .setLngLat([-73.97250160574913, 40.77307297334758])
+            .addTo(map.current);
+            
+            // Animation function
+            function animate() {
+              requestAnimationFrame(animate);
+              sphere.rotation.x += 0.01;
+              sphere.rotation.y += 0.01;
+              renderer.render(scene, camera);
+            }
+            animate();
+            
+            this.scene = scene;
+            this.camera = camera;
+            this.renderer = renderer;
+          },
+          render: function () {
+            if (this.renderer) {
+              this.renderer.render(this.scene, this.camera);
+            }
+          }
         });
       });
     } catch (error) {
@@ -352,136 +493,94 @@ export default function WorldMap() {
   }, [mapBounds]);
 
   const createAnimatedMarker = (location) => {
-    const { totalAura = 0 } = location;
+    console.log('Creating marker for:', location.place_id, location.name);
     
-    // Find the appropriate tier
-    const tier = Object.entries(PLACE_TIERS).find(([_, config]) => 
-      totalAura >= config.minAura
-    )?.[1] || PLACE_TIERS.COMMON;
-
-    // Create marker element
     const el = document.createElement('div');
-    el.className = 'animated-marker';
+    el.className = 'place-marker animate-float';
     
-    // Apply tier-specific styles
-    el.style.backgroundColor = tier.color;
-    el.style.width = '20px';
-    el.style.height = '20px';
-    el.style.borderRadius = '50%';
-    el.style.cursor = 'pointer';
+    // Create icon container
+    const iconContainer = document.createElement('div');
+    iconContainer.className = 'icon-container';
+    iconContainer.innerHTML = `
+      <div class="icon-3d">
+        <span style="font-size: 24px">
+          ${location.hasEvents ? '🎉' : '🏠'}
+        </span>
+        ${location.hasEvents ? '<div class="sparkles"></div>' : ''}
+      </div>
+    `;
+    el.appendChild(iconContainer);
 
-    // Add glow effect for legendary places
-    if (tier.animation?.glow) {
-      el.style.boxShadow = `0 0 20px ${tier.color}`;
-    }
-
-    // Add tier tag
+    // Add name tag
     const tag = document.createElement('div');
     tag.className = 'marker-tag';
-    tag.textContent = tier.tag;
+    tag.innerHTML = `
+      <div class="flex items-center gap-2 bg-black/80 px-3 py-1 rounded-full">
+        <span>${location.name}</span>
+      </div>
+    `;
     el.appendChild(tag);
 
-    // Add spring animation
-    if (tier.animation) {
-      const { scale, duration } = tier.animation;
-      const animation = el.animate([
-        { transform: `scale(${scale[0]})` },
-        { transform: `scale(${scale[1]})` },
-        { transform: `scale(${scale[2]})` }
-      ], {
-        duration,
-        iterations: Infinity,
-        easing: 'ease-in-out'
-      });
-    }
-
-    return new mapboxgl.Marker(el)
-      .setLngLat(location.coordinates)
-      .addTo(map.current);
+    return new mapboxgl.Marker({
+      element: el,
+      offset: [0, -30]
+    })
+    .setLngLat(location.coordinates)
+    .addTo(map.current);
   };
 
   const loadLocationData = async (bounds) => {
     try {
-      const currentZoom = map.current.getZoom();
-      
-      // Determine which tiers to fetch based on zoom level
-      const eligibleTiers = Object.entries(PLACE_TIERS).filter(
-        ([_, config]) => currentZoom >= config.minZoom
-      );
-
-      if (eligibleTiers.length === 0) return;
-
-      const minAura = Math.min(...eligibleTiers.map(([_, config]) => config.minAura));
-
       const response = await fetch('/api/locations/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          bounds,
-          minAura,
-          includeEvents: currentZoom >= 15 // Fetch events at high zoom
-        })
+        body: JSON.stringify({ bounds })
       });
 
-      const { locations, events } = await response.json();
-      
-      // Filter out already loaded locations
-      const newLocations = locations.filter(loc => !loadedLocations.has(loc.placeId));
-      
-      // Update loaded locations set
-      const updatedLocations = new Set(loadedLocations);
-      newLocations.forEach(loc => updatedLocations.add(loc.placeId));
-      setLoadedLocations(updatedLocations);
+      const { locations } = await response.json();
+      console.log('Found locations:', locations);
 
-      // Create animated markers for new locations
-      newLocations.forEach(location => {
-        createAnimatedMarker(location);
-      });
-
-      // Add event markers if zoom level is appropriate
-      if (currentZoom >= 15 && events?.length) {
-        events.forEach(event => {
-          const eventMarker = document.createElement('div');
-          eventMarker.className = 'event-marker';
-          
-          // Add Three.js animation for events
-          const scene = new THREE.Scene();
-          const camera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);
-          const renderer = new THREE.WebGLRenderer({ alpha: true });
-          renderer.setSize(40, 40);
-          
-          const geometry = new THREE.SphereGeometry(1, 32, 32);
-          const material = new THREE.MeshPhongMaterial({
-            color: 0x88ff88,
-            emissive: 0x44aa44,
-            transparent: true,
-            opacity: 0.8
-          });
-          
-          const sphere = new THREE.Mesh(geometry, material);
-          scene.add(sphere);
-          
-          const light = new THREE.PointLight(0xffffff, 1, 100);
-          light.position.set(10, 10, 10);
-          scene.add(light);
-          
-          camera.position.z = 5;
-          
-          function animate() {
-            requestAnimationFrame(animate);
-            sphere.rotation.x += 0.01;
-            sphere.rotation.y += 0.01;
-            renderer.render(scene, camera);
+      // Create GeoJSON source
+      const geojsonData = {
+        type: 'FeatureCollection',
+        features: locations.map(loc => ({
+          type: 'Feature',
+          geometry: {
+            type: 'Point',
+            coordinates: loc.coordinates.coordinates
+          },
+          properties: {
+            description: loc.name,
+            icon: '🌱'
           }
-          animate();
-          
-          eventMarker.appendChild(renderer.domElement);
-          
-          new mapboxgl.Marker(eventMarker)
-            .setLngLat(event.coordinates)
-            .addTo(map.current);
+        }))
+      };
+
+      // Add source and layer if they don't exist
+      if (!map.current.getSource('places')) {
+        map.current.addSource('places', {
+          type: 'geojson',
+          data: geojsonData
         });
+
+        map.current.addLayer({
+          id: 'poi-labels',
+          type: 'symbol',
+          source: 'places',
+          layout: {
+            'text-field': ['get', 'description'],
+            'text-variable-anchor': ['top', 'bottom', 'left', 'right'],
+            'text-radial-offset': 0.5,
+            'text-justify': 'auto',
+            'icon-text': ['get', 'icon'],
+            'icon-size': 1.5
+          }
+        });
+      } else {
+        // Update existing source
+        map.current.getSource('places').setData(geojsonData);
       }
+
     } catch (error) {
       console.error('Error loading locations:', error);
     }
