@@ -4,6 +4,8 @@ import { useRouter } from 'next/router';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import LandmarkModal from './LandmarkModal';
+import { motion } from 'framer-motion';
+import { useSpring, animated } from '@react-spring/web';
 
 // Set the token before any map operations
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
@@ -59,15 +61,78 @@ export default function WorldMap() {
 
       map.current = new mapboxgl.Map({
         container: mapContainer.current,
-        style: 'mapbox://styles/mapbox/streets-v12',
+        style: 'mapbox://styles/mapbox/dark-v11',
         center: [-73.968285, 40.785091],
         zoom: 12,
         maxZoom: 20,
-        minZoom: 3
+        minZoom: 3,
+        pitch: 45,
+        bearing: -17.6,
+        antialias: true
       });
 
       map.current.on('style.load', () => {
         console.log('Map style loaded successfully');
+        
+        // Add 3D buildings
+        const layers = map.current.getStyle().layers;
+        const labelLayerId = layers.find(
+          (layer) => layer.type === 'symbol' && layer.layout['text-field']
+        ).id;
+        
+        map.current.addLayer(
+          {
+            id: 'add-3d-buildings',
+            source: 'composite',
+            'source-layer': 'building',
+            filter: ['==', 'extrude', 'true'],
+            type: 'fill-extrusion',
+            minzoom: 15,
+            paint: {
+              'fill-extrusion-color': [
+                'interpolate',
+                ['linear'],
+                ['get', 'height'],
+                0, 'rgba(30, 30, 35, 0.5)',
+                50, 'rgba(40, 40, 45, 0.6)',
+                100, 'rgba(50, 50, 55, 0.7)',
+                200, 'rgba(60, 60, 65, 0.8)'
+              ],
+              'fill-extrusion-height': [
+                'interpolate',
+                ['linear'],
+                ['zoom'],
+                15,
+                0,
+                15.05,
+                ['get', 'height']
+              ],
+              'fill-extrusion-base': [
+                'interpolate',
+                ['linear'],
+                ['zoom'],
+                15,
+                0,
+                15.05,
+                ['get', 'min_height']
+              ],
+              'fill-extrusion-opacity': 0.7,
+              'fill-extrusion-vertical-gradient': true
+            }
+          },
+          labelLayerId
+        );
+        
+        // Add ambient light effect
+        map.current.addLayer({
+          id: 'sky',
+          type: 'sky',
+          paint: {
+            'sky-type': 'atmosphere',
+            'sky-atmosphere-sun': [0.0, 90.0],
+            'sky-atmosphere-sun-intensity': 15
+          }
+        });
       });
 
       map.current.on('style.error', (e) => {
@@ -97,10 +162,11 @@ export default function WorldMap() {
           try {
             map.current.flyTo({
               center: coordinates,
-              zoom: 15,
-              pitch: 60,
+              zoom: 17,
+              pitch: 65,
               bearing: Math.random() * 180 - 90,
-              duration: 1500
+              duration: 2000,
+              essential: true
             });
 
             const response = await fetch(`/api/places/search?query=${encodeURIComponent(name)}&location=${coordinates.join(',')}`);
@@ -261,6 +327,22 @@ export default function WorldMap() {
 
   return (
     <div className="relative w-full h-[100dvh] bg-gray-100">
+      {/* ShapeVerse Logo & Title */}
+      <motion.div 
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="absolute top-4 left-4 flex items-center gap-3 z-20"
+      >
+        <img 
+          src="/shapelogo.png" 
+          alt="ShapeVerse" 
+          className="w-10 h-10 filter invert"
+        />
+        <h1 className="text-2xl font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
+          ShapeVerse
+        </h1>
+      </motion.div>
+
       <div 
         ref={mapContainer} 
         className="absolute inset-0 w-full h-full"
@@ -284,52 +366,75 @@ export default function WorldMap() {
         </div>
       )}
       
-      <div className="absolute top-4 right-4 left-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-4 z-10">
+      <div className="absolute top-4 right-4 sm:right-8 flex flex-col sm:flex-row items-stretch sm:items-center gap-4 z-10 max-w-3xl ml-auto">
         {user ? (
           <>
-            <div className="order-2 sm:order-1 flex-1 px-4 py-2 rounded-full bg-purple-900/50 backdrop-blur-sm border border-purple-500/20">
-              <div className="flex items-center gap-2">
-                {user.profileImage && (
+            <motion.div 
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="order-2 sm:order-1 flex-1 h-14 px-6 rounded-xl bg-black/40 backdrop-blur-md border border-white/10 shadow-xl shadow-black/10"
+            >
+              <div className="flex items-center h-full gap-3">
+                {user.profileImage ? (
                   <img 
                     src={user.profileImage} 
                     alt="Profile" 
-                    className="w-8 h-8 rounded-full border border-purple-500/50"
+                    className="w-8 h-8 rounded-full ring-2 ring-white/20"
                   />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-white/10 to-white/5 ring-2 ring-white/20 flex items-center justify-center">
+                    <span className="text-white/70">🧙‍♂️</span>
+                  </div>
                 )}
                 <div className="flex flex-col">
-                  <span className="text-sm text-gray-300">Explorer</span>
-                  <span className="text-xs text-gray-400">
+                  <span className="text-sm font-medium text-white/90">Explorer</span>
+                  <span className="text-xs text-white/60">
                     {user.address.slice(0, 6)}...{user.address.slice(-4)}
                   </span>
                 </div>
               </div>
-            </div>
+            </motion.div>
             
-            <div className="order-1 sm:order-2 px-4 py-2 rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white shadow-lg">
-              <div className="flex items-center justify-center gap-2">
-                <span className="text-xl">✨</span>
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="order-1 sm:order-2 h-14 px-6 rounded-xl bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-md border border-white/10 shadow-xl"
+            >
+              <div className="flex items-center h-full gap-3">
+                <animated.div className="text-2xl">
+                  {useSpring({
+                    from: { rotateZ: 0 },
+                    to: { rotateZ: 360 },
+                    loop: true,
+                    config: { duration: 10000 }
+                  }).rotateZ.to(val => (
+                    <span style={{ transform: `rotate(${val}deg)` }}>✨</span>
+                  ))}
+                </animated.div>
                 <div className="flex flex-col">
-                  <span className="text-sm text-gray-200">Total Aura</span>
-                  <span className="font-mono font-bold">{aura}</span>
+                  <span className="text-sm font-medium text-white/90">Total Aura</span>
+                  <span className="font-mono font-bold text-white">{aura.toLocaleString()}</span>
                 </div>
               </div>
-            </div>
+            </motion.div>
 
             <button
               onClick={handleDisconnect}
-              className="order-3 px-4 py-2 rounded-full border border-red-500/20 hover:bg-red-500/10 text-red-400 font-medium transition-all duration-200 whitespace-nowrap"
+              className="order-3 h-14 px-6 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 font-medium transition-all duration-200 hover:scale-105"
             >
               Disconnect
             </button>
           </>
         ) : (
-          <button
+          <motion.button
             onClick={handleConnect}
-            className="w-full sm:w-auto group relative px-6 py-3 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-purple-500/25"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            whileHover={{ scale: 1.05 }}
+            className="h-14 px-8 rounded-xl bg-gradient-to-br from-white/20 to-white/10 backdrop-blur-md border border-white/20 text-white font-medium shadow-xl hover:shadow-white/10 transition-all duration-200"
           >
-            <span className="relative z-10">Connect Wallet</span>
-            <div className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-400 to-purple-500 opacity-0 group-hover:opacity-20 blur transition-opacity duration-200"></div>
-          </button>
+            Connect Wallet
+          </motion.button>
         )}
       </div>
 

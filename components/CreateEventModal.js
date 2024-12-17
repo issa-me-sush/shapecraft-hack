@@ -16,9 +16,9 @@ export default function CreateEventModal({ onClose, onSubmit }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-gray-900 rounded-xl p-6 max-w-lg w-full border border-purple-500/20">
-        <h3 className="text-xl font-bold text-purple-400 mb-4">Create Event</h3>
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-fadeIn">
+      <div className="bg-gray-900/90 rounded-xl p-6 max-w-lg w-full border border-purple-500/20 shadow-xl shadow-purple-500/10 animate-slideUp">
+        <h3 className="text-xl font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent mb-4">Create Event</h3>
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>

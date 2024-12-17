@@ -99,7 +99,9 @@ export function EventsPanel({ landmark }) {
       {user && (
         <button
           onClick={() => setShowCreateModal(true)}
-          className="w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all duration-200"
+          className="w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg 
+            hover:from-purple-700 hover:to-blue-700 transition-all duration-200 
+            shadow-lg shadow-purple-500/20 hover:shadow-purple-500/30 font-medium"
         >
           Create New Event
         </button>
@@ -114,7 +116,9 @@ export function EventsPanel({ landmark }) {
       ) : events.length > 0 ? (
         <div className="space-y-4">
           {events.map((event) => (
-            <div key={event._id} className="bg-gradient-to-br from-purple-900/50 to-blue-900/50 rounded-xl p-6 backdrop-blur-sm border border-white/10">
+            <div key={event._id} className="bg-gradient-to-br from-purple-900/50 to-blue-900/50 rounded-xl p-6 
+              backdrop-blur-sm border border-white/10 shadow-lg shadow-purple-900/20
+              hover:shadow-purple-800/30 transition-all duration-300">
               <div className="flex justify-between items-start mb-4">
                 <h3 className="text-lg font-semibold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
                   {event.title}

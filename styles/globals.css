@@ -89,6 +89,7 @@ body {
   right: 0;
   width: 100% !important;
   height: 100% !important;
+  filter: drop-shadow(0 0 20px rgba(0, 0, 0, 0.3));
 }
 
 .mapboxgl-map {
@@ -99,6 +100,7 @@ body {
   right: 0;
   width: 100% !important;
   height: 100% !important;
+  transition: all 0.3s ease-out;
 }
 
 @keyframes gradient-xy {
@@ -122,4 +124,36 @@ body {
   );
   background-size: 200% 200%;
   animation: gradient-xy 15s ease infinite;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { 
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to { 
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.2s ease-out;
+}
+
+.animate-slideUp {
+  animation: slideUp 0.3s ease-out;
+}
+
+.mapboxgl-map .mapboxgl-canvas-container:hover {
+  cursor: grab;
+}
+
+.mapboxgl-map .mapboxgl-canvas-container:active {
+  cursor: grabbing;
 }

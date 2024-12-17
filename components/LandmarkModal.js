@@ -343,31 +343,27 @@ export default function LandmarkModal({ landmark, onClose, onAuraClaimed }) {
   };
 
   return (
-    <div className="relative bg-black/95 backdrop-blur-md rounded-2xl max-w-2xl w-full mx-auto overflow-hidden">
-      {/* Modal Header */}
-      <div className="relative h-48 sm:h-64">
-        {currentPhoto ? (
-          <Image
-            src={currentPhoto}
-            alt={landmark.name}
-            fill
-            className="object-cover"
-          />
-        ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-purple-600 to-blue-600" />
-        )}
-        
-        {/* Close button */}
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
-        >
-          <XMarkIcon className="w-6 h-6" />
-        </button>
-
-        {/* Title overlay */}
-        <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/90 to-transparent">
-          <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">{landmark.name}</h2>
+    <div 
+      className="fixed inset-0 z-50 flex items-start justify-center px-4 overflow-y-auto bg-black/60 backdrop-blur-sm"
+    >
+      <div 
+        className="bg-black/90 rounded-xl w-full max-w-4xl border border-white/10 my-20 shadow-xl shadow-purple-500/10"
+      >
+        {/* Header */}
+        <div className="p-6 border-b border-white/10">
+          <div className="flex justify-between items-start gap-4">
+            <h2 
+              className="text-2xl font-bold bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent"
+            >
+              {landmark.name}
+            </h2>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-white/10 rounded-lg transition-colors text-gray-400 hover:text-white"
+            >
+              <XMarkIcon className="w-6 h-6" />
+            </button>
+          </div>
           <div className="flex flex-wrap gap-2">
             <div className="px-3 py-1 rounded-full bg-purple-500/20 backdrop-blur-sm text-purple-200 text-sm">
               {locationStats.totalAura.toFixed(0)} AURA Farmed
@@ -382,66 +378,66 @@ export default function LandmarkModal({ landmark, onClose, onAuraClaimed }) {
             )}
           </div>
         </div>
+
+        {/* Tabs - Make scrollable on mobile */}
+        <Tab.Group onChange={setSelectedTab}>
+          <Tab.List className="flex overflow-x-auto border-b border-white/10 hide-scrollbar">
+            {[
+              { name: 'Overview', icon: '🌟' },
+              { name: 'Quests', icon: '⚔️' },
+              { name: 'Treasures', icon: '🏰' },
+              { name: 'Community', icon: '👥' },
+              { name: 'Events', icon: '🎉' }
+            ].map((tab, idx) => (
+              <Tab
+                key={tab.name}
+                className={({ selected }) => `
+                  flex items-center gap-2 px-6 py-4 focus:outline-none transition-colors
+                  ${selected 
+                    ? 'text-purple-400 border-b-2 border-purple-500 bg-white/5' 
+                    : 'text-gray-400 hover:text-gray-300 hover:bg-white/5'}
+                `}
+              >
+                <span>{tab.icon}</span>
+                {tab.name}
+              </Tab>
+            ))}
+          </Tab.List>
+
+          <Tab.Panels className="p-4 sm:p-6 max-h-[60vh] sm:max-h-[70vh] overflow-y-auto">
+            {/* Overview Panel */}
+            <Tab.Panel>
+              <OverviewPanel 
+                landmark={landmark}
+                user={user}
+                userStats={userStats}
+                locationStats={locationStats}
+                claimStatus={claimStatus}
+                isLoading={isLoading}
+                handleClaim={handleClaim}
+                openAuthModal={openAuthModal}
+              />
+            </Tab.Panel>
+
+            {/* Quests Panel */}
+            <Tab.Panel>
+              <QuestsPanel />
+            </Tab.Panel>
+
+            {/* Treasures Panel */}
+            <Tab.Panel>
+              <TreasuresPanel landmark={landmark} />
+            </Tab.Panel>
+            <Tab.Panel>
+              <CommunityPanel landmark={landmark} />
+            </Tab.Panel>
+            {/* Events Panel */}
+            <Tab.Panel>
+              <EventsPanel landmark={landmark} />
+            </Tab.Panel>
+          </Tab.Panels>
+        </Tab.Group>
       </div>
-
-      {/* Tabs - Make scrollable on mobile */}
-      <Tab.Group onChange={setSelectedTab}>
-        <Tab.List className="flex overflow-x-auto border-b border-white/10 hide-scrollbar">
-          {[
-            { name: 'Overview', icon: '🌟' },
-            { name: 'Quests', icon: '⚔️' },
-            { name: 'Treasures', icon: '🏰' },
-            { name: 'Community', icon: '👥' },
-            { name: 'Events', icon: '🎉' }
-          ].map((tab, idx) => (
-            <Tab
-              key={tab.name}
-              className={({ selected }) => `
-                flex items-center gap-2 px-6 py-4 focus:outline-none transition-colors
-                ${selected 
-                  ? 'text-purple-400 border-b-2 border-purple-500 bg-white/5' 
-                  : 'text-gray-400 hover:text-gray-300 hover:bg-white/5'}
-              `}
-            >
-              <span>{tab.icon}</span>
-              {tab.name}
-            </Tab>
-          ))}
-        </Tab.List>
-
-        <Tab.Panels className="p-4 sm:p-6 max-h-[60vh] sm:max-h-[70vh] overflow-y-auto">
-          {/* Overview Panel */}
-          <Tab.Panel>
-            <OverviewPanel 
-              landmark={landmark}
-              user={user}
-              userStats={userStats}
-              locationStats={locationStats}
-              claimStatus={claimStatus}
-              isLoading={isLoading}
-              handleClaim={handleClaim}
-              openAuthModal={openAuthModal}
-            />
-          </Tab.Panel>
-
-          {/* Quests Panel */}
-          <Tab.Panel>
-            <QuestsPanel />
-          </Tab.Panel>
-
-          {/* Treasures Panel */}
-          <Tab.Panel>
-            <TreasuresPanel landmark={landmark} />
-          </Tab.Panel>
-          <Tab.Panel>
-            <CommunityPanel landmark={landmark} />
-          </Tab.Panel>
-          {/* Events Panel */}
-          <Tab.Panel>
-            <EventsPanel landmark={landmark} />
-          </Tab.Panel>
-        </Tab.Panels>
-      </Tab.Group>
     </div>
   );
 } 
