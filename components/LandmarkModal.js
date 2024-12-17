@@ -4,6 +4,8 @@ import Image from 'next/image';
 import { EVOLUTION_LEVELS, ZONE_TYPES } from '../utils/placeEvolution';
 import { useUser , useAuthModal } from "@account-kit/react";
 import { XMarkIcon } from '@heroicons/react/24/outline';
+import { ethers } from 'ethers';
+import { CONTRACT_ADDRESS, ABI } from '../contracts/abi';
 // import { useAuthModal } from '../hooks/useAuthModal';
 
 // Add this helper function at the top of the file, before the component
@@ -222,9 +224,73 @@ function EvolutionPanel({ evolution, zone }) {
   );
 }
 
+// Add network configuration at the top
+const SHAPE_NETWORK = {
+  chainId: '0x2B03', // 11011 in hex
+  chainName: 'Shape Sepolia',
+  nativeCurrency: {
+    name: 'ETH',
+    symbol: 'ETH',
+    decimals: 18
+  },
+  rpcUrls: ['https://sepolia.shape.network'],
+  blockExplorerUrls: ['https://explorer-sepolia.shape.network']
+};
+
+// Add network switching function
+const switchToShapeNetwork = async () => {
+  try {
+    await window.ethereum.request({
+      method: 'wallet_switchEthereumChain',
+      params: [{ chainId: SHAPE_NETWORK.chainId }],
+    });
+    console.log('Switched to Shape Network successfully');
+  } catch (switchError) {
+    // This error code indicates that the chain has not been added to MetaMask.
+    if (switchError.code === 4902) {
+      try {
+        await window.ethereum.request({
+          method: 'wallet_addEthereumChain',
+          params: [SHAPE_NETWORK],
+        });
+        console.log('Shape Network added to wallet');
+      } catch (addError) {
+        console.error('Failed to add Shape Network:', addError);
+        throw new Error('Please add Shape Network to your wallet manually');
+      }
+    } else {
+      console.error('Failed to switch network:', switchError);
+      throw switchError;
+    }
+  }
+};
+
+// Add this debug function at the top
+const debugLog = (section, data) => {
+  console.log(`[${section}]`, {
+    timestamp: new Date().toISOString(),
+    ...data
+  });
+};
+
 export default function LandmarkModal({ landmark, onClose, onAuraClaimed }) {
   const user = useUser();
   const { openAuthModal } = useAuthModal();
+  
+  // Debug logs for initial render
+  debugLog('MODAL_INIT', {
+    landmark: {
+      name: landmark?.name,
+      place_id: landmark?.place_id,
+      auraReward: landmark?.auraReward,
+      full: landmark
+    },
+    user: {
+      address: user?.address,
+      full: user
+    }
+  });
+
   console.log("Landmark data received:", landmark); // Debug log
   const [selectedTab, setSelectedTab] = useState(0);
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
@@ -238,44 +304,48 @@ export default function LandmarkModal({ landmark, onClose, onAuraClaimed }) {
   const photos = landmark.photos || [];
   const currentPhoto = photos[currentPhotoIndex]?.url;
 
+  // Add logging to useEffect
+  useEffect(() => {
+    debugLog('USER_OR_LANDMARK_UPDATE', {
+      user: user?.address,
+      placeId: landmark?.place_id,
+      hasUser: !!user,
+      hasPlaceId: !!landmark?.place_id
+    });
+  }, [user, landmark]);
+
   // Fetch user stats for this location
   useEffect(() => {
     const fetchUserStats = async () => {
       if (!user?.address || !landmark.place_id) return;
 
       try {
-        const response = await fetch(`/api/users/location-stats`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            walletAddress: user.address,
-            placeId: landmark.place_id
-          })
+        // Get provider and contract
+        const provider = new ethers.providers.Web3Provider(window.ethereum);
+        const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, provider);
+
+        // Get last claim time from contract
+        const lastClaimTime = await contract.lastClaim(user.address, landmark.place_id);
+        const now = Date.now();
+        
+        // Convert BigNumber to number and multiply by 1000 for milliseconds
+        const lastClaimMs = lastClaimTime.toNumber() * 1000;
+        const nextClaimTime = lastClaimMs + (24 * 60 * 60 * 1000);
+        
+        setClaimStatus({
+          canClaim: now >= nextClaimTime,
+          nextClaimTime: nextClaimTime
         });
 
-        const data = await response.json();
-        console.log('User stats:', data); // Debug log
-        setUserStats(data);
+        // Get user's total Aura balance
+        const auraBalance = await contract.balanceOf(user.address);
         
-        // Simplified claim status logic
-        const lastClaim = data.lastClaim ? new Date(data.lastClaim) : null;
-        const now = new Date();
-        
-        if (!lastClaim) {
-          // Never claimed before
-          setClaimStatus({
-            canClaim: true,
-            nextClaimTime: null
-          });
-        } else {
-          const timeSinceLastClaim = now - lastClaim;
-          const canClaim = timeSinceLastClaim >= 24 * 60 * 60 * 1000;
-          
-          setClaimStatus({
-            canClaim,
-            nextClaimTime: canClaim ? null : lastClaim.getTime() + (24 * 60 * 60 * 1000)
-          });
-        }
+        setUserStats({
+          totalAuraEarned: Number(ethers.utils.formatUnits(auraBalance, 18)),
+          lastClaim: new Date(lastClaimMs),
+          totalVisits: 1 // This could be tracked differently if needed
+        });
+
       } catch (error) {
         console.error('Error fetching user stats:', error);
       }
@@ -286,50 +356,165 @@ export default function LandmarkModal({ landmark, onClose, onAuraClaimed }) {
 
   // Handle aura claim
   const handleClaim = async () => {
-    if (!user?.address || !landmark.place_id) {
-      console.log("User or landmark data is missing:", { user, landmark });
+    debugLog('CLAIM_START', {
+      user: user?.address,
+      placeId: landmark?.place_id,
+      timestamp: Date.now()
+    });
+
+    if (!user?.address || !landmark?.place_id) {
+      debugLog('CLAIM_ERROR_MISSING_DATA', {
+        hasUser: !!user,
+        userAddress: user?.address,
+        hasLandmark: !!landmark,
+        placeId: landmark?.place_id
+      });
       return;
     }
     
     setIsLoading(true);
     try {
-      const response = await fetch('/api/locations/claim-aura', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          walletAddress: user.address,
-          placeId: landmark.place_id
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to claim');
-      }
-
-      const data = await response.json();
-      console.log('Claim response:', {
-        ...data,
-        nextClaimFormatted: new Date(data.nextClaimTime).toISOString()
+      debugLog('NETWORK_SWITCH_START', {
+        targetChain: SHAPE_NETWORK.chainId,
+        targetNetwork: SHAPE_NETWORK.chainName
       });
       
-      if (data.success) {
-        setUserStats(prev => ({
-          ...prev,
-          totalAuraEarned: data.totalAuraEarned,
-          lastClaim: new Date()
-        }));
+      await switchToShapeNetwork();
+      
+      // Get provider and signer
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const network = await provider.getNetwork();
+      debugLog('NETWORK_STATUS', {
+        chainId: network.chainId,
+        name: network.name,
+        ensAddress: network.ensAddress,
+        targetMatches: network.chainId === parseInt(SHAPE_NETWORK.chainId, 16)
+      });
+
+      const signer = provider.getSigner();
+      const address = await signer.getAddress();
+      debugLog('SIGNER_INFO', {
+        address,
+        matchesUser: address.toLowerCase() === user.address.toLowerCase()
+      });
+
+      const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
+      debugLog('CONTRACT_INIT', {
+        address: CONTRACT_ADDRESS,
+        hasClaimFunction: !!contract.claimAura,
+        functions: Object.keys(contract.functions)
+      });
+
+      // Check if location is active
+      const isActive = await contract.activeLocations(landmark.place_id);
+      debugLog('LOCATION_CHECK', {
+        placeId: landmark.place_id,
+        isActive,
+        landmarkName: landmark.name
+      });
+
+      // Check last claim time
+      const lastClaimTime = await contract.lastClaim(address, landmark.place_id);
+      const now = Date.now();
+      const lastClaimDate = new Date(lastClaimTime.toNumber() * 1000);
+      debugLog('CLAIM_TIME_CHECK', {
+        lastClaimTime: lastClaimTime.toString(),
+        lastClaimDate: lastClaimDate.toISOString(),
+        timeSinceLastClaim: now - lastClaimDate.getTime(),
+        canClaim: now - lastClaimDate.getTime() >= 24 * 60 * 60 * 1000
+      });
+
+      debugLog('SENDING_TRANSACTION', {
+        userAddress: address,
+        placeId: landmark.place_id,
+        contractAddress: CONTRACT_ADDRESS
+      });
+
+      // Call the contract
+      const tx = await contract.claimAura(landmark.place_id);
+      debugLog('TRANSACTION_SENT', {
+        hash: tx.hash,
+        nonce: tx.nonce,
+        gasLimit: tx.gasLimit.toString(),
+        data: tx.data
+      });
+      
+      // Wait for confirmation
+      const receipt = await tx.wait();
+      debugLog('TRANSACTION_CONFIRMED', {
+        status: receipt.status,
+        blockNumber: receipt.blockNumber,
+        gasUsed: receipt.gasUsed.toString(),
+        events: receipt.events.map(e => ({
+          event: e.event,
+          args: e.args,
+          data: e.data
+        })),
+        logs: receipt.logs
+      });
+
+      if (receipt.status === 1) {
+        const claimEvent = receipt.events?.find(e => e.event === 'AuraClaimed');
+        const auraAmount = claimEvent 
+          ? ethers.utils.formatUnits(claimEvent.args.amount, 18) 
+          : '100';
+
+        debugLog('CLAIM_SUCCESS', {
+          amount: auraAmount,
+          event: claimEvent,
+          eventArgs: claimEvent?.args,
+          rawAmount: claimEvent?.args?.amount?.toString()
+        });
+
+        // Update UI state
+        setUserStats(prev => {
+          const newStats = {
+            ...prev,
+            totalAuraEarned: prev.totalAuraEarned + Number(auraAmount),
+            lastClaim: new Date()
+          };
+          debugLog('STATS_UPDATE', {
+            previous: prev,
+            new: newStats
+          });
+          return newStats;
+        });
 
         setClaimStatus({
           canClaim: false,
-          nextClaimTime: data.nextClaimTime
+          nextClaimTime: Date.now() + (24 * 60 * 60 * 1000)
         });
 
-        onAuraClaimed(data.auraEarned);
+        onAuraClaimed(Number(auraAmount));
       }
     } catch (error) {
-      console.error('Error claiming aura:', error);
+      debugLog('CLAIM_ERROR', {
+        message: error.message,
+        code: error.code,
+        reason: error.reason,
+        data: error.data,
+        stack: error.stack,
+        errorObject: error
+      });
+
+      // More specific error handling
+      if (error.code === 4902) {
+        alert("Please add Shape Network to your wallet");
+      } else if (error.code === -32603) {
+        debugLog('NETWORK_ERROR', {
+          provider: window.ethereum?.isMetaMask,
+          chainId: await window.ethereum?.request({ method: 'eth_chainId' })
+        });
+        alert("Network error. Please check your connection to Shape Network");
+      } else {
+        const errorMessage = error.reason || error.message || "Unknown error";
+        alert(`Failed to claim: ${errorMessage}`);
+      }
     } finally {
       setIsLoading(false);
+      debugLog('CLAIM_COMPLETE', {
+        timestamp: Date.now()
+      });
     }
   };
 
@@ -377,7 +562,7 @@ export default function LandmarkModal({ landmark, onClose, onAuraClaimed }) {
             { name: 'Overview', icon: '🌟' },
             { name: 'Quests', icon: '⚔️' },
             { name: 'Treasures', icon: '🏰' },
-            { name: 'Community', icon: '👥' },
+            { name: 'Community', icon: '����' },
             { name: 'Events', icon: '🎉' }
           ].map((tab, idx) => (
             <Tab

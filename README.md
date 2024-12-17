@@ -1,40 +1,106 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/pages/api-reference/create-next-app).
+# ShapeVerse 🌍
 
-## Getting Started
+ShapeVerse is a Web3-powered geospatial metaverse that transforms real-world locations into interactive digital spaces, built on Shape Network. Users can explore landmarks, earn SAURA tokens, and build digital communities around real-world locations.
 
-First, run the development server:
+## 🌟 Core Features
 
+### Interactive Globe Interface
+- **3D Visualization**: Dynamic globe rendering using Three.js
+- **Real-time Location Mapping**: Interactive landmarks displayed on the globe
+- **Animated Arcs**: Visual connections between active locations
+- **Custom Styling**: Themed globe appearance with ambient lighting
+
+### Location-Based Mechanics
+- **Landmark Discovery**: Find and activate real-world locations
+- **Daily SAURA Mining**: Earn tokens through location check-ins
+- **Auto-activation System**: New locations become active upon first visit
+- **Location NFTs**: Mint memories of visited places
+
+### Web3 Integration
+- **Account Kit Integration**: Seamless wallet connection and management
+- **Shape Network Support**: Built on Shape Sepolia testnet
+- **Smart Contract Interaction**: Direct blockchain transactions
+- **Token Gating**: Exclusive access to events and features
+
+## 💎 SAURA Token Features
+
+### Token Economics
+- **Symbol**: SAURA
+- **Initial Supply**: 1,000,000 SAURA
+- **Distribution**: Daily claims and quest rewards
+- **Utility**: Staking, governance, and event access
+
+### Staking Mechanism
+- 15% APR for staked tokens
+- Location-specific staking pools
+- Automatic reward distribution
+- Compound interest calculation
+
+## 🚀 Getting Started
+
+1. **Installation**
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone https://github.com/yourusername/shapeverse.git
+cd shapeverse
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. **Environment Setup**
+```bash
+# .env.local
+NEXT_PUBLIC_ALCHEMY_API_KEY=your_key
+NEXT_PUBLIC_SHAPE_RPC_URL=https://sepolia.shape.network
+```
 
-You can start editing the page by modifying `pages/index.js`. The page auto-updates as you edit the file.
+3. **Development**
+```bash
+npm run dev
+# Open http://localhost:3000
+```
 
-[API routes](https://nextjs.org/docs/pages/building-your-application/routing/api-routes) can be accessed on [http://localhost:3000/api/hello](http://localhost:3000/api/hello). This endpoint can be edited in `pages/api/hello.js`.
+## 🔗 Smart Contract Deployment
 
-The `pages/api` directory is mapped to `/api/*`. Files in this directory are treated as [API routes](https://nextjs.org/docs/pages/building-your-application/routing/api-routes) instead of React pages.
+- **Network**: Shape Sepolia
+- **Contract Address**: `0xD6302d3bDDb59Da0217B4A04778d3642A379dA0E`
 
-This project uses [`next/font`](https://nextjs.org/docs/pages/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🎮 User Features
 
-## Learn More
+### Location Interaction
+- **Earn Tokens**: Check in at locations to claim SAURA tokens.
+- **NFT Memories**: Mint NFTs representing visited places.
+- **Staking Rewards**: Stake SAURA for location-specific benefits.
 
-To learn more about Next.js, take a look at the following resources:
+## 🔒 Security Features
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn-pages-router) - an interactive Next.js tutorial.
+- NonReentrant protection
+- Ownership controls
+- Safe math operations
+- Time-locked claims
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 🎯 Future Development
 
-## Deploy on Vercel
+- [ ] Mobile AR integration
+- [ ] Cross-chain bridging
+- [ ] Enhanced social features
+- [ ] Governance implementation
+- [ ] Location-based NFT marketplace
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 🤝 Contributing
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/pages/building-your-application/deploying) for more details.
+1. Fork the repository
+2. Create feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit changes (`git commit -m 'Add AmazingFeature'`)
+4. Push to branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+## 📄 License
+
+This project is licensed under the MIT License.
+
+## 🙏 Acknowledgments
+
+- Shape Network Team
+- Alchemy Account Kit Documentation and Alchemy Team for workshops/support
+- OpenZeppelin Contracts
+- Three.js Community
+

@@ -22,7 +22,7 @@
     "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx"
-, "pages/_app.tsx", "components/auth/Login.jsx"  ],
+, "pages/_app.tsx", "components/auth/Login.jsx", "components/globe.jsx"  ],
   "exclude": [
     "node_modules"
   ]
