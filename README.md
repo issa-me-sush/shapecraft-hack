@@ -2,6 +2,14 @@
 
 ShapeVerse is a Web3-powered geospatial metaverse that transforms real-world locations into interactive digital spaces, built on Shape Network. Users can explore landmarks, earn SAURA tokens, and build digital communities around real-world locations.
 
+## 🌟 Demo & Architecture
+
+### System Architecture
+![ShapeVerse Architecture](https://github.com/user-attachments/assets/398c5be9-f45a-41e3-a9ad-1f4973d64bab)
+
+### Video Demo
+🎮 [Watch ShapeVerse Demo](https://drive.google.com/drive/folders/1yywX1krse_G7IcDpYOAqv2BXkpSF5R4q?usp=drive_link)
+
 ## 🌟 Core Concept
 
 ShapeVerse transforms real-world locations into interactive digital spaces where:
@@ -162,5 +170,6 @@ This project is licensed under the MIT License.
 - **User Profiles**: On-chain identity
 - **Achievement Badges**: NFT-based achievements
 - **Community Governance**: Token-based voting
+
 <img width="847" alt="image" src="https://github.com/user-attachments/assets/398c5be9-f45a-41e3-a9ad-1f4973d64bab" />
 
