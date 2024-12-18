@@ -162,4 +162,5 @@ This project is licensed under the MIT License.
 - **User Profiles**: On-chain identity
 - **Achievement Badges**: NFT-based achievements
 - **Community Governance**: Token-based voting
+<img width="847" alt="image" src="https://github.com/user-attachments/assets/398c5be9-f45a-41e3-a9ad-1f4973d64bab" />
 
