@@ -48,18 +48,20 @@ export default function Home() {
   };
 
   return (
-    <div>
+    <div className="bg-[#000102]">
     <div className="relative min-h-screen bg-gradient-to-b from-black via-[#0a192f] to-black overflow-hidden">
     {/* Globe in the background */}
-    <div className="fixed inset-0 z-0 pointer-events-auto flex items-center justify-center overflow-hidden">
-      <div className="relative w-[800px] h-[800px] flex-shrink-0">
+    <div className="fixed inset-0 z-0 pointer-events-auto flex items-center justify-center">
+      <div className="relative aspect-square w-auto h-[80vh] max-w-[800px] flex-shrink-0">
         <World data={sampleArcs} globeConfig={{
           ...globeConfig,
           globeColor: "#0a192f",
           emissive: "#0f2847",
           atmosphereColor: "#ffffff",
           ambientLight: "#4a5568",
-          polygonColor: "rgba(255,255,255,0.3)"
+          polygonColor: "rgba(255,255,255,0.3)",
+          preserveAspectRatio: true,
+          responsiveWidth: true
         }} />
       </div>
     </div>
@@ -126,34 +128,36 @@ export default function Home() {
     </div>
      
   </div>
-  <div className="grid md:grid-cols-3 gap-6 mt-[-10] max-w-6xl mx-auto px-4 bg-[#0a192f]">
-  {[
-    {
-      title: "Explore",
-      description: "Discover digital landmarks and hidden treasures in the real world",
-      icon: "🗺️"
-    },
-    {
-      title: "Build",
-      description: "Create and evolve your own digital structures",
-      icon: "🏗️"
-    },
-    {
-      title: "Connect",
-      description: "Join forces with others to build something greater",
-      icon: "🤝"
-    }
-  ].map((feature, index) => (
-    <div 
-      key={index}
-      className="p-6 rounded-2xl bg-gradient-to-b from-white/5 to-white/[0.02] backdrop-blur-sm border border-white/10 transform hover:scale-105 transition-all duration-200 hover:border-purple-500/30"
-    >
-      <div className="text-4xl mb-4">{feature.icon}</div>
-      <h3 className="text-xl font-semibold mb-2 text-purple-200">{feature.title}</h3>
-      <p className="text-gray-400">{feature.description}</p>
+  <div className="relative bg-transparent ">
+    <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto px-4 py-16 ">
+      {[
+        {
+          title: "Explore",
+          description: "Discover digital landmarks and hidden treasures in the real world",
+          icon: "🗺️"
+        },
+        {
+          title: "Build",
+          description: "Create and evolve your own digital structures",
+          icon: "🏗️"
+        },
+        {
+          title: "Connect",
+          description: "Join forces with others to build something greater",
+          icon: "🤝"
+        }
+      ].map((feature, index) => (
+        <div 
+          key={index}
+          className="p-6 rounded-2xl border border-white/5 transform hover:scale-105 transition-all duration-300 hover:border-white/20 hover:bg-white/[0.02]"
+        >
+          <div className="text-4xl mb-4">{feature.icon}</div>
+          <h3 className="text-xl font-semibold mb-2 text-white/90">{feature.title}</h3>
+          <p className="text-gray-400">{feature.description}</p>
+        </div>
+      ))}
     </div>
-  ))}
-</div>
+  </div>
 
 </div>
   
