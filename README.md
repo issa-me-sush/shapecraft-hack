@@ -132,3 +132,34 @@ This project is licensed under the MIT License.
 - OpenZeppelin Contracts
 - Three.js Community
 
+## 🔗 Web3 Infrastructure
+
+### Smart Contracts
+- **AURA Token**: ERC20 token for ecosystem rewards and governance
+- **Location NFTs**: ERC721 tokens representing discovered locations
+- **Quest System**: On-chain quest tracking and rewards
+- **Staking Pool**: Location-based staking with dynamic rewards
+
+### IPFS Integration
+- **NFT Metadata Storage**: Decentralized storage for location data
+- **Event Content**: Event-related content and media
+- **Community Content**: User-generated content storage
+
+### Token Gating
+- **Premium Features**: Access based on AURA holdings
+- **Exclusive Events**: Token-gated community events
+- **Special Quests**: Premium quest lines
+- **Enhanced Rewards**: Bonus rewards for token holders
+
+### On-Chain Features
+- **Daily Quests**: Regular on-chain tasks
+- **Community Challenges**: Group objectives
+- **Achievement System**: Permanent on-chain records
+- **Event Participation**: On-chain event tracking
+
+### Social Infrastructure
+- **Location Chat**: Community communication
+- **User Profiles**: On-chain identity
+- **Achievement Badges**: NFT-based achievements
+- **Community Governance**: Token-based voting
+
