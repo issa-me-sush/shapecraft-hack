@@ -368,34 +368,39 @@ export default function LandmarkModal({ landmark, onClose, onAuraClaimed }) {
         className="bg-black/90 rounded-xl w-full max-w-4xl border border-white/10 my-20 shadow-xl shadow-purple-500/10"
       >
         {/* Header */}
-        <div className="p-6 border-b border-white/10">
-          <div className="flex justify-between items-start gap-4">
-            <h2 
-              className="text-2xl font-bold bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent"
-            >
-              {landmark.name}
-            </h2>
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-white/10 rounded-lg transition-colors text-gray-400 hover:text-white"
-            >
-              <XMarkIcon className="w-6 h-6" />
-            </button>
-          </div>
+        <div className="relative h-48 sm:h-64">
+        {currentPhoto ? (
+          <Image
+            src={currentPhoto}
+            alt={landmark.name}
+            fill
+            className="object-cover"
+          />
+        ) : (
+          <div className="absolute inset-0 bg-gradient-to-br from-purple-600 to-blue-600" />
+        )}
+        
+        {/* Close button */}
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
+        >
+          <XMarkIcon className="w-6 h-6" />
+        </button>
+
+        {/* Title overlay */}
+        <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/90 to-transparent">
+          <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">{landmark.name}</h2>
           <div className="flex flex-wrap gap-2">
             <div className="px-3 py-1 rounded-full bg-purple-500/20 backdrop-blur-sm text-purple-200 text-sm">
-              {locationStats.totalAura.toFixed(0)} AURA Farmed
+              Level {landmark.level || 1}
             </div>
             <div className="px-3 py-1 rounded-full bg-blue-500/20 backdrop-blur-sm text-blue-200 text-sm">
-              {locationStats.visitorCount} Visitors
+              {landmark.visitors || 0} Visitors
             </div>
-            {locationStats.totalStaked > 0 && (
-              <div className="px-3 py-1 rounded-full bg-green-500/20 backdrop-blur-sm text-green-200 text-sm">
-                {locationStats.totalStaked.toFixed(0)} AURA Staked
-              </div>
-            )}
           </div>
         </div>
+      </div>
 
         {/* Tabs - Make scrollable on mobile */}
         <Tab.Group onChange={setSelectedTab}>
